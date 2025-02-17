@@ -44,12 +44,6 @@ class Router {
 
             $pathPattern = $this->getPathPattern($this->uri);
 
-            // Dynamic route for article details
-            if (count($this->uri) === 3 && $this->uri[1] === 'articles' && $this->uri[2] !== 'search') {
-                $this->handleDynamicRoute();
-                return;
-            }
-
             // Check if route exists
             if (!isset($this->routes[$this->requestMethod][$pathPattern])) {
                 throw new Exception('Not Found', 404);
@@ -63,21 +57,7 @@ class Router {
             $this->handleError($e);
         }
     }
-
-    private function handleDynamicRoute(): void {
-        if ($this->uri[1] !== 'articles') {
-            throw new Exception('Not Found', 404);
-        }
-
-        $articleUrl = urldecode($this->uri[2]);
-        $handler = $this->routes['GET']['api/articles/{url}'] ?? null;
-
-        if (!$handler) {
-            throw new Exception('Route handler not found', 500);
-        }
-
-        $handler($articleUrl);
-    }
+ 
 
     private function handleError(Exception $e): void {
         $statusCode = $e->getCode() ?: 500;
