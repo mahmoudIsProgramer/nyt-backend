@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Config\Config;
+use App\Services\ValueObjects\{ApiResponse, Article, Pagination};
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\{GuzzleException, RequestException};
 
 class NYTService {
     private const BASE_URL = 'https://api.nytimes.com/svc/search/v2/';
@@ -38,127 +38,73 @@ class NYTService {
         return $apiKey;
     }
 
-    private function extractArticleData(array $article): array {
-        return [
-            'id' => $article['_id'] ?? '',
-            'url' => $article['web_url'] ?? '',
-            'title' => $article['headline']['main'] ?? '',
-            'abstract' => $article['abstract'] ?? '',
-            'lead_paragraph' => $article['lead_paragraph'] ?? '',
-            'source' => $article['source'] ?? '',
-            'published_date' => $article['pub_date'] ?? '',
-            'section' => $article['section_name'] ?? '',
-            'type' => $article['document_type'] ?? '',
-            'word_count' => (int)($article['word_count'] ?? 0),
-            'authors' => $this->extractAuthors($article['byline'] ?? []),
-            'multimedia' => $this->extractMultimedia($article['multimedia'] ?? []),
-            'keywords' => $this->extractKeywords($article['keywords'] ?? [])
-        ];
-    }
+    private function makeRequest(string $endpoint, array $params = []): array {
+        try {
+            $response = $this->client->request('GET', $endpoint, [
+                'query' => array_merge($params, ['api-key' => $this->apiKey])
+            ]);
 
-    private function extractAuthors(array $byline): array {
-        if (empty($byline['person'])) {
-            return [];
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            if ($e->hasResponse()) {
+                $error = json_decode($e->getResponse()->getBody(), true);
+                throw new \RuntimeException(
+                    $error['fault']['faultstring'] ?? 'API request failed',
+                    $e->getCode() ?: 500
+                );
+            }
+            throw new \RuntimeException('Failed to connect to NYT API', 503);
         }
-
-        return array_map(function($person) {
-            return [
-                'name' => trim(sprintf('%s %s', $person['firstname'] ?? '', $person['lastname'] ?? '')),
-                'role' => $person['role'] ?? null
-            ];
-        }, $byline['person']);
-    }
-
-    private function extractMultimedia(array $multimedia): array {
-        return array_map(function($item) {
-            return [
-                'url' => $item['url'] ?? '',
-                'type' => $item['type'] ?? '',
-                'height' => (int)($item['height'] ?? 0),
-                'width' => (int)($item['width'] ?? 0),
-                'caption' => $item['caption'] ?? null
-            ];
-        }, array_filter($multimedia, fn($item) => !empty($item['url'])));
-    }
-
-    private function extractKeywords(array $keywords): array {
-        return array_map(fn($keyword) => $keyword['value'], $keywords);
     }
 
     public function searchArticles(string $query, int $page = 1): array {
         try {
-            $response = $this->client->request('GET', 'articlesearch.json', [
-                'query' => [
-                    'q' => $query,
-                    'page' => max(0, $page - 1),
-                    'api-key' => $this->apiKey
-                ]
+            $data = $this->makeRequest('articlesearch.json', [
+                'q' => $query,
+                'page' => max(0, $page - 1)
             ]);
 
-            $data = json_decode($response->getBody(), true);
-            $articles = $data['response']['docs'] ?? [];
-            $totalHits = $data['response']['meta']['hits'] ?? 0;
+            $articles = array_map(
+                fn($article) => Article::fromArray($article),
+                $data['response']['docs'] ?? []
+            );
 
-            return [
-                'status' => 'success',
-                'data' => [
-                    'articles' => array_map([$this, 'extractArticleData'], $articles),
-                    'pagination' => [
-                        'current_page' => $page,
-                        'total_items' => $totalHits,
-                        'items_per_page' => self::ITEMS_PER_PAGE,
-                        'total_pages' => ceil($totalHits / self::ITEMS_PER_PAGE),
-                        'has_more' => ($page * self::ITEMS_PER_PAGE) < $totalHits
-                    ]
-                ]
-            ];
+            $pagination = Pagination::create(
+                currentPage: $page,
+                totalItems: $data['response']['meta']['hits'] ?? 0,
+                itemsPerPage: self::ITEMS_PER_PAGE
+            );
 
-        } catch (RequestException $e) {
-            return [
-                'status' => 'error',
-                'message' => $e->hasResponse() 
-                    ? json_decode($e->getResponse()->getBody(), true)['fault']['faultstring'] ?? 'API request failed'
-                    : 'Failed to connect to NYT API',
-                'code' => $e->getCode()
-            ];
-        } catch (GuzzleException $e) {
-            return [
-                'status' => 'error',
-                'message' => 'Failed to fetch articles: ' . $e->getMessage(),
-                'code' => $e->getCode()
-            ];
+            return ApiResponse::success([
+                'articles' => array_map(fn($article) => $article->toArray(), $articles),
+                'pagination' => $pagination->toArray()
+            ])->toArray();
+
+        } catch (\Exception $e) {
+            return ApiResponse::error($e->getMessage(), $e->getCode())->toArray();
         }
     }
 
-    public function getArticle(string $articleUrl): ?array {
+    public function getArticle(string $articleUrl): array {
         try {
-            $response = $this->client->request('GET', 'articlesearch.json', [
-                'query' => [
-                    'fq' => sprintf('web_url:"%s"', $articleUrl),
-                    'api-key' => $this->apiKey
-                ]
+            $data = $this->makeRequest('articlesearch.json', [
+                'fq' => sprintf('web_url:"%s"', $articleUrl)
             ]);
 
-            $data = json_decode($response->getBody(), true);
-            $article = $data['response']['docs'][0] ?? null;
+            $articleData = $data['response']['docs'][0] ?? null;
 
-            if (!$article) {
-                return null;
+            if (!$articleData) {
+                return ApiResponse::error('Article not found', 404)->toArray();
             }
 
-            return [
-                'status' => 'success',
-                'data' => [
-                    'article' => $this->extractArticleData($article)
-                ]
-            ];
+            $article = Article::fromArray($articleData);
 
-        } catch (GuzzleException $e) {
-            return [
-                'status' => 'error',
-                'message' => 'Failed to fetch article: ' . $e->getMessage(),
-                'code' => $e->getCode()
-            ];
+            return ApiResponse::success([
+                'article' => $article->toArray()
+            ])->toArray();
+
+        } catch (\Exception $e) {
+            return ApiResponse::error($e->getMessage(), $e->getCode())->toArray();
         }
     }
 }
