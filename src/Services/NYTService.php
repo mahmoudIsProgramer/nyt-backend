@@ -3,10 +3,11 @@
 namespace App\Services;
 
 use App\Config\Config;
-use App\Services\Http\Config\HttpConfig;
-use App\Services\Http\Contracts\HttpClientInterface;
 use App\Services\Http\GuzzleHttpClient;
-use App\Services\ValueObjects\{ApiResponse, Article, Pagination};
+use App\Services\Http\Config\HttpConfig;
+use GuzzleHttp\Exception\RequestException;
+use App\Services\Http\Contracts\HttpClientInterface;
+use App\Services\DTOs\{ArticleDTO, PaginationDTO};
 
 class NYTService {
     private const BASE_URL = 'https://api.nytimes.com/svc/search/v2/';
@@ -58,54 +59,44 @@ class NYTService {
         }
     }
 
+    /**
+     * @return array{0: ArticleDTO[], 1: PaginationDTO}
+     * @throws \RuntimeException
+     */
     public function searchArticles(string $query, int $page = 1): array {
-        try {
-            $data = $this->makeRequest('articlesearch.json', [
-                'q' => $query,
-                'page' => max(0, $page - 1)
-            ]);
+        $data = $this->makeRequest('articlesearch.json', [
+            'q' => $query,
+            'page' => max(0, $page - 1)
+        ]);
 
-            $articles = array_map(
-                fn($article) => Article::fromArray($article),
-                $data['response']['docs'] ?? []
-            );
+        $articles = array_map(
+            fn($article) => ArticleDTO::fromArray($article),
+            $data['response']['docs'] ?? []
+        );
 
-            $pagination = Pagination::create(
-                currentPage: $page,
-                totalItems: $data['response']['meta']['hits'] ?? 0,
-                itemsPerPage: self::ITEMS_PER_PAGE
-            );
+        $pagination = PaginationDTO::create(
+            currentPage: $page,
+            totalItems: $data['response']['meta']['hits'] ?? 0,
+            itemsPerPage: self::ITEMS_PER_PAGE
+        );
 
-            return ApiResponse::success([
-                'articles' => array_map(fn($article) => $article->toArray(), $articles),
-                'pagination' => $pagination->toArray()
-            ])->toArray();
-
-        } catch (\Exception $e) {
-            return ApiResponse::error($e->getMessage(), $e->getCode())->toArray();
-        }
+        return [$articles, $pagination];
     }
 
-    public function getArticle(string $articleUrl): array {
-        try {
-            $data = $this->makeRequest('articlesearch.json', [
-                'fq' => sprintf('web_url:"%s"', $articleUrl)
-            ]);
+    /**
+     * @throws \RuntimeException
+     */
+    public function getArticle(string $articleUrl): ?ArticleDTO {
+        $data = $this->makeRequest('articlesearch.json', [
+            'fq' => sprintf('web_url:"%s"', $articleUrl)
+        ]);
 
-            $articleData = $data['response']['docs'][0] ?? null;
+        $articleData = $data['response']['docs'][0] ?? null;
 
-            if (!$articleData) {
-                return ApiResponse::error('Article not found', 404)->toArray();
-            }
-
-            $article = Article::fromArray($articleData);
-
-            return ApiResponse::success([
-                'article' => $article->toArray()
-            ])->toArray();
-
-        } catch (\Exception $e) {
-            return ApiResponse::error($e->getMessage(), $e->getCode())->toArray();
+        if (!$articleData) {
+            return null;
         }
+
+        return ArticleDTO::fromArray($articleData);
     }
 }

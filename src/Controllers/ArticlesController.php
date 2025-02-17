@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Services\NYTService;
+use App\Http\Resources\{ArticleResource, ArticleCollectionResource};
 
 class ArticlesController extends BaseController {
     private NYTService $nytService;
@@ -16,21 +17,23 @@ class ArticlesController extends BaseController {
      * GET /api/articles/search?q=query&page=1
      */
     public function search(): void {
-        $query = $_GET['q'] ?? '';
-        $page = (int)($_GET['page'] ?? 1);
+        try {
+            $query = $_GET['q'] ?? '';
+            $page = (int)($_GET['page'] ?? 1);
 
-        if (empty($query)) {
-            $this->errorResponse('Search query is required');
-            return;
+            if (empty($query)) {
+                $this->errorResponse('Search query is required', 400);
+                return;
+            }
+
+            [$articles, $pagination] = $this->nytService->searchArticles($query, $page);
+            
+            $resource = new ArticleCollectionResource($articles, $pagination);
+            $this->jsonResponse($resource->toArray());
+
+        } catch (\Exception $e) {
+            $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }
-
-        if ($page < 1) {
-            $this->errorResponse('Page number must be greater than 0');
-            return;
-        }
-
-        $result = $this->nytService->searchArticles($query, $page);
-        $this->jsonResponse($result);
     }
 
     /**
@@ -38,18 +41,19 @@ class ArticlesController extends BaseController {
      * GET /api/articles/{url}
      */
     public function getArticle(string $articleUrl): void {
-        if (empty($articleUrl)) {
-            $this->errorResponse('Article URL is required');
-            return;
-        }
+        try {
+            $article = $this->nytService->getArticle($articleUrl);
+            
+            if (!$article) {
+                $this->errorResponse('Article not found', 404);
+                return;
+            }
 
-        $result = $this->nytService->getArticle($articleUrl);
-        
-        if ($result === null) {
-            $this->errorResponse('Article not found', 404);
-            return;
-        }
+            $resource = new ArticleResource($article);
+            $this->jsonResponse($resource->toArray());
 
-        $this->jsonResponse($result);
+        } catch (\Exception $e) {
+            $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+        }
     }
 }

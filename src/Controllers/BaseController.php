@@ -13,7 +13,10 @@ class BaseController {
         header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type');
         
-        echo json_encode($data);
+        echo json_encode([
+            'status' => 'success',
+            'data' => $data
+        ]);
         exit;
     }
 
@@ -21,9 +24,17 @@ class BaseController {
      * Send an error response
      */
     protected function errorResponse(string $message, int $statusCode = 400): void {
-        $this->jsonResponse([
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type');
+        
+        echo json_encode([
             'status' => 'error',
-            'message' => $message
-        ], $statusCode);
+            'message' => $message,
+            'code' => $statusCode
+        ]);
+        exit;
     }
 }
