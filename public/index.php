@@ -3,24 +3,22 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Core\Router;
-use App\Controllers\ArticlesController;
+use App\Core\RouteServiceProvider;
 
-// Enable error reporting for development
+// Load environment variables
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
+
+// Set error reporting
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', '1');
 
-// Initialize router and controller
+// Initialize Router
 $router = new Router();
-$controller = new ArticlesController();
 
-// Define routes
-$router->get('api/articles/search', function() use ($controller) {
-    $controller->search();
-});
+// Load routes through service provider
+$routeProvider = new RouteServiceProvider($router, __DIR__ . '/..');
+$routeProvider->boot();
 
-$router->get('api/articles/{url}', function(string $articleUrl) use ($controller) {
-    $controller->getArticle($articleUrl);
-});
-
-// Dispatch the request
+// Handle the request
 $router->dispatch();
