@@ -3,31 +3,21 @@
 namespace App\Services;
 
 use App\Config\Config;
+use App\Services\Http\Config\HttpConfig;
+use App\Services\Http\Contracts\HttpClientInterface;
+use App\Services\Http\GuzzleHttpClient;
 use App\Services\ValueObjects\{ApiResponse, Article, Pagination};
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\{GuzzleException, RequestException};
 
 class NYTService {
     private const BASE_URL = 'https://api.nytimes.com/svc/search/v2/';
     private const ITEMS_PER_PAGE = 10;
     
-    private Client $client;
+    private HttpClientInterface $client;
     private string $apiKey;
 
     public function __construct() {
-        $this->initializeClient();
         $this->apiKey = $this->getApiKey();
-    }
-
-    private function initializeClient(): void {
-        $this->client = new Client([
-            'base_uri' => self::BASE_URL,
-            'timeout'  => 5.0,
-            'headers' => [
-                'Accept' => 'application/json',
-                'User-Agent' => 'NYT Article Explorer/1.0'
-            ]
-        ]);
+        $this->initializeClient();
     }
 
     private function getApiKey(): string {
@@ -38,16 +28,27 @@ class NYTService {
         return $apiKey;
     }
 
+    private function initializeClient(): void {
+        $config = new HttpConfig(
+            baseUrl: self::BASE_URL,
+            headers: [
+                'Accept' => 'application/json',
+                'User-Agent' => 'NYT Article Explorer/1.0'
+            ],
+            query: ['api-key' => $this->apiKey]
+        );
+
+        $this->client = new GuzzleHttpClient($config);
+    }
+
     private function makeRequest(string $endpoint, array $params = []): array {
         try {
-            $response = $this->client->request('GET', $endpoint, [
-                'query' => array_merge($params, ['api-key' => $this->apiKey])
-            ]);
+            $response = $this->client->get($endpoint, $params);
 
-            return json_decode($response->getBody(), true);
+            return $response;
         } catch (RequestException $e) {
             if ($e->hasResponse()) {
-                $error = json_decode($e->getResponse()->getBody(), true);
+                $error = $e->getResponse()->getBody();
                 throw new \RuntimeException(
                     $error['fault']['faultstring'] ?? 'API request failed',
                     $e->getCode() ?: 500
