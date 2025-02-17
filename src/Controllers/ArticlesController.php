@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Services\NYTService;
+use App\Services\DTOs\SearchRequestDTO;
 use App\Http\Resources\{ArticleResource, ArticleCollectionResource};
 
 class ArticlesController extends BaseController {
@@ -18,19 +19,15 @@ class ArticlesController extends BaseController {
      */
     public function search(): void {
         try {
-            $query = $_GET['q'] ?? '';
-            $page = (int)($_GET['page'] ?? 1);
-
-            if (empty($query)) {
-                $this->errorResponse('Search query is required', 400);
-                return;
-            }
-
-            [$articles, $pagination] = $this->nytService->searchArticles($query, $page);
+            $request = SearchRequestDTO::fromRequest($_GET);
+            
+            [$articles, $pagination] = $this->nytService->searchArticles($request);
             
             $resource = new ArticleCollectionResource($articles, $pagination);
             $this->jsonResponse($resource->toArray());
 
+        } catch (\InvalidArgumentException $e) {
+            $this->errorResponse($e->getMessage(), 400);
         } catch (\Exception $e) {
             $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }

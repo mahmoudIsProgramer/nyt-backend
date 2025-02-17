@@ -7,7 +7,7 @@ use App\Services\Http\GuzzleHttpClient;
 use App\Services\Http\Config\HttpConfig;
 use GuzzleHttp\Exception\RequestException;
 use App\Services\Http\Contracts\HttpClientInterface;
-use App\Services\DTOs\{ArticleDTO, PaginationDTO};
+use App\Services\DTOs\{ArticleDTO, PaginationDTO, SearchRequestDTO};
 
 class NYTService {
     private const BASE_URL = 'https://api.nytimes.com/svc/search/v2/';
@@ -42,32 +42,13 @@ class NYTService {
         $this->client = new GuzzleHttpClient($config);
     }
 
-    private function makeRequest(string $endpoint, array $params = []): array {
-        try {
-            $response = $this->client->get($endpoint, $params);
-
-            return $response;
-        } catch (RequestException $e) {
-            if ($e->hasResponse()) {
-                $error = $e->getResponse()->getBody();
-                throw new \RuntimeException(
-                    $error['fault']['faultstring'] ?? 'API request failed',
-                    $e->getCode() ?: 500
-                );
-            }
-            throw new \RuntimeException('Failed to connect to NYT API', 503);
-        }
-    }
-
     /**
      * @return array{0: ArticleDTO[], 1: PaginationDTO}
      * @throws \RuntimeException
+     * @throws \InvalidArgumentException
      */
-    public function searchArticles(string $query, int $page = 1): array {
-        $data = $this->makeRequest('articlesearch.json', [
-            'q' => $query,
-            'page' => max(0, $page - 1)
-        ]);
+    public function searchArticles(SearchRequestDTO $request): array {
+        $data = $this->client->get('articlesearch.json', $request->toQueryParams());
 
         $articles = array_map(
             fn($article) => ArticleDTO::fromArray($article),
@@ -75,7 +56,7 @@ class NYTService {
         );
 
         $pagination = PaginationDTO::create(
-            currentPage: $page,
+            currentPage: $request->page + 1,
             totalItems: $data['response']['meta']['hits'] ?? 0,
             itemsPerPage: self::ITEMS_PER_PAGE
         );
@@ -87,9 +68,12 @@ class NYTService {
      * @throws \RuntimeException
      */
     public function getArticle(string $articleUrl): ?ArticleDTO {
-        $data = $this->makeRequest('articlesearch.json', [
-            'fq' => sprintf('web_url:"%s"', $articleUrl)
-        ]);
+        $request = new SearchRequestDTO(
+            fq: sprintf('web_url:"%s"', $articleUrl),
+            page: 0
+        );
+
+        $data = $this->client->get('articlesearch.json', $request->toQueryParams());
 
         $articleData = $data['response']['docs'][0] ?? null;
 

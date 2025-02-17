@@ -10,26 +10,19 @@ class ArticleResource extends Resource {
     }
 
     public function toArray(): array {
+        /** @var ArticleDTO $article */
+        $article = $this->resource;
+        
         return [
-            'id' => $this->resource->id,
-            'url' => $this->resource->url,
-            'title' => $this->resource->title,
-            'abstract' => $this->resource->abstract,
-            'content' => $this->resource->leadParagraph,
-            'metadata' => [
-                'source' => $this->resource->source,
-                'published_at' => $this->resource->publishedDate,
-                'section' => $this->resource->section,
-                'type' => $this->resource->type,
-                'word_count' => $this->resource->wordCount
+            'id' => $article->id,
+            'web_url' => $article->webUrl,
+            'snippet' => $article->snippet,
+            'print_info' => [
+                'page' => $article->printPage,
+                'section' => $article->printSection
             ],
-            'authors' => array_map(function($author) {
-                return [
-                    'name' => $author['name'],
-                    'role' => $author['role']
-                ];
-            }, $this->resource->authors),
-            'media' => array_map(function($item) {
+            'source' => $article->source,
+            'multimedia' => array_map(function($item) {
                 return [
                     'url' => $item['url'],
                     'type' => $item['type'],
@@ -37,10 +30,27 @@ class ArticleResource extends Resource {
                         'width' => $item['width'],
                         'height' => $item['height']
                     ],
-                    'caption' => $item['caption']
+                    'caption' => $item['caption'] ?? null,
+                    'subtype' => $item['subtype'] ?? null
                 ];
-            }, $this->resource->multimedia),
-            'keywords' => $this->resource->keywords
+            }, $article->multimedia),
+            'headline' => $article->headline,
+            'keywords' => array_map(function($keyword) {
+                return [
+                    'name' => $keyword['name'] ?? '',
+                    'value' => $keyword['value'] ?? '',
+                    'rank' => $keyword['rank'] ?? null,
+                    'major' => $keyword['major'] ?? null
+                ];
+            }, $article->keywords),
+            'pub_date' => $article->pubDate,
+            'document_type' => $article->documentType,
+            'news_desk' => $article->newsDesk,
+            'section_name' => $article->sectionName,
+            'byline' => $article->byline,
+            'type_of_material' => $article->typeOfMaterial,
+            'word_count' => $article->wordCount,
+            'uri' => $article->uri
         ];
     }
 }
