@@ -2,46 +2,50 @@
 
 namespace App\Services;
 
-use App\DTOs\UserDTO;
 use App\Models\User;
-use App\Utils\Auth;
+use App\DTOs\UserDTO;
+use Firebase\JWT\JWT;
 
 class AuthService
 {
     private User $userModel;
+    private string $jwtSecret;
+    private int $jwtExpiry;
 
     public function __construct()
     {
         $this->userModel = new User();
+        $this->jwtSecret = $_ENV['JWT_SECRET'] ?? 'your-secret-key';
+        $this->jwtExpiry = (int)($_ENV['JWT_EXPIRY'] ?? 3600);
     }
 
     /**
      * Register a new user
      *
      * @param UserDTO $userDTO
-     * @throws \InvalidArgumentException If email already exists
      * @throws \RuntimeException If user creation fails
      * @return array
      */
     public function register(UserDTO $userDTO): array
     {
-        // Check if email exists
-        if ($this->userModel->findByEmail($userDTO->email)) {
-            throw new \InvalidArgumentException('Email already exists');
-        }
-
-        // Create user
-        $userId = $this->userModel->create($userDTO->toArray());
+        $hashedPassword = password_hash($userDTO->password, PASSWORD_DEFAULT);
+        
+        $userId = $this->userModel->create([
+            'name' => $userDTO->name,
+            'email' => $userDTO->email,
+            'password' => $hashedPassword
+        ]);
         if (!$userId) {
             throw new \RuntimeException('Failed to create user');
         }
 
-        // Generate token
-        $token = Auth::generateToken($userId);
-
         return [
-            'user_id' => $userId,
-            'token' => $token
+            'user' => [
+                'id' => $userId,
+                'name' => $userDTO->name,
+                'email' => $userDTO->email
+            ],
+            'token' => $this->generateToken($userId)
         ];
     }
 
@@ -53,22 +57,28 @@ class AuthService
      * @throws \InvalidArgumentException If credentials are invalid
      * @return array
      */
-    public function authenticate(string $email, string $password): array
+    public function authenticate(string $email, string $password): ?array
     {
         $user = $this->userModel->findByEmail($email);
         if (!$user || !password_verify($password, $user['password'])) {
             throw new \InvalidArgumentException('Invalid credentials');
         }
 
-        $token = Auth::generateToken($user['id']);
-
+        unset($user['password']);
         return [
-            'user' => [
-                'id' => $user['id'],
-                'name' => $user['name'],
-                'email' => $user['email']
-            ],
-            'token' => $token
+            'user' => $user,
+            'token' => $this->generateToken($user['id'])
         ];
+    }
+
+    private function generateToken(int $userId): string
+    {
+        $payload = [
+            'sub' => $userId,
+            'iat' => time(),
+            'exp' => time() + $this->jwtExpiry
+        ];
+
+        return JWT::encode($payload, $this->jwtSecret, 'HS256');
     }
 }

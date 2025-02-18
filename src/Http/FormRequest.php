@@ -2,6 +2,8 @@
 
 namespace App\Http;
 
+use App\Http\Validation\ValidationRules;
+
 abstract class FormRequest
 {
     protected array $data = [];
@@ -44,21 +46,58 @@ abstract class FormRequest
     {
         $this->errors = [];
         $rules = $this->rules();
+        $messages = method_exists($this, 'messages') ? $this->messages() : [];
 
         foreach ($rules as $field => $ruleSet) {
             $ruleArray = is_string($ruleSet) ? explode('|', $ruleSet) : $ruleSet;
             
             foreach ($ruleArray as $rule) {
-                $this->validateField($field, $rule);
+                if (!$this->validateField($field, $rule)) {
+                    $messageKey = "{$field}.{$rule}";
+                    $this->errors[] = $messages[$messageKey] ?? $this->getDefaultMessage($field, $rule);
+                }
             }
         }
 
         return empty($this->errors);
     }
 
-    protected function validateField(string $field, string $rule): void
+    protected function validateField(string $field, string $rule): bool
     {
         $value = $this->get($field);
+        
+        // Handle rules with parameters
+        if (strpos($rule, ':') !== false) {
+            [$ruleName, $parameter] = explode(':', $rule, 2);
+        } else {
+            $ruleName = $rule;
+            $parameter = null;
+        }
+
+        switch ($ruleName) {
+            case 'required':
+                return ValidationRules::required($value);
+
+            case 'email':
+                return ValidationRules::email($value);
+
+            case 'min':
+                return ValidationRules::min($value, (int)$parameter);
+
+            case 'max':
+                return ValidationRules::max($value, (int)$parameter);
+
+            case 'unique':
+                [$table, $field] = explode(',', $parameter);
+                return ValidationRules::unique($value, $field, $table);
+        }
+
+        return true;
+    }
+
+    protected function getDefaultMessage(string $field, string $rule): string
+    {
+        $field = ucfirst(str_replace('_', ' ', $field));
         
         if (strpos($rule, ':') !== false) {
             [$rule, $parameter] = explode(':', $rule, 2);
@@ -66,30 +105,17 @@ abstract class FormRequest
 
         switch ($rule) {
             case 'required':
-                if (!isset($this->data[$field]) || $this->data[$field] === '') {
-                    $this->errors[] = ucfirst($field) . ' is required';
-                }
-                break;
-
+                return "$field is required";
             case 'email':
-                if ($value !== null && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    $this->errors[] = ucfirst($field) . ' must be a valid email address';
-                }
-                break;
-
+                return "$field must be a valid email address";
             case 'min':
-                if ($value !== null && strlen($value) < (int)$parameter) {
-                    $this->errors[] = ucfirst($field) . " must be at least $parameter characters";
-                }
-                break;
-
+                return "$field must be at least $parameter characters";
             case 'max':
-                if ($value !== null && strlen($value) > (int)$parameter) {
-                    $this->errors[] = ucfirst($field) . " must not exceed $parameter characters";
-                }
-                break;
-                
-            // Add more validation rules as needed
+                return "$field must not exceed $parameter characters";
+            case 'unique':
+                return "$field already exists";
+            default:
+                return "$field is invalid";
         }
     }
 
