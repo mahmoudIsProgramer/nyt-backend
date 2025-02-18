@@ -17,6 +17,7 @@ class Router {
         'Access-Control-Max-Age' => '3600',
         'Content-Type' => 'application/json; charset=UTF-8'
     ];
+    private array $middleware = [];
 
     public function __construct() {
         $this->uri = $this->parseUri();
@@ -57,6 +58,14 @@ class Router {
      */
     private function addRoute(string $method, string $path, callable $handler): self {
         $this->routes[$method][$path] = $handler;
+        return $this;
+    }
+
+    /**
+     * Add middleware to a route
+     */
+    public function middleware(callable $middleware): self {
+        $this->middleware[] = $middleware;
         return $this;
     }
 
@@ -108,6 +117,20 @@ class Router {
     }
 
     /**
+     * Execute the middleware chain
+     */
+    private function executeMiddleware(callable $handler): callable {
+        $next = $handler;
+        
+        // Execute middleware in reverse order
+        foreach (array_reverse($this->middleware) as $middleware) {
+            $next = $middleware($next);
+        }
+        
+        return $next;
+    }
+
+    /**
      * Handle the request
      */
     public function dispatch(): void {
@@ -132,8 +155,12 @@ class Router {
                 throw new Exception('Not Found', 404);
             }
 
-            // Execute route handler
             $handler = $this->routes[$this->requestMethod][$pathPattern];
+            $handler = $this->executeMiddleware($handler);
+            
+            // Clear middleware after handling request
+            $this->middleware = [];
+            
             $handler();
 
         } catch (Exception $e) {
