@@ -21,7 +21,15 @@ A PHP application that allows users to search, view, and save favorite articles 
    ```
 4. Update `.env` with your NYT API key and JWT secret
 5. Initialize the database (we'll create this script in the next step)
-6. Start the development server:
+6. Create the database tables:
+   ```bash
+   touch database/database.sqlite
+   ```
+7. And initialize the database schema:
+   ```bash
+   sqlite3 database/database.sqlite < database/schema.sql
+   ```
+8. Start the development server:
    ```bash
    php -S localhost:8000 -t public
    ```
