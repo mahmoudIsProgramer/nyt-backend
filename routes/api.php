@@ -2,6 +2,7 @@
 
 use App\Controllers\ArticlesController;
 use App\Controllers\ArticleController;
+use App\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
 
 /**
@@ -10,8 +11,18 @@ use App\Middleware\AuthMiddleware;
 
 $articlesController = new ArticlesController();
 $articleController = new ArticleController();
+$authController = new AuthController();
 
-// Public Routes
+// Public Auth Routes (no authentication required)
+$router->post('api/auth/register', function() use ($authController) {
+    $authController->register();
+});
+
+$router->post('api/auth/login', function() use ($authController) {
+    $authController->login();
+});
+
+// Public Article Routes
 $router->get('api/articles/search', function() use ($articlesController) {
     $articlesController->search();
 });

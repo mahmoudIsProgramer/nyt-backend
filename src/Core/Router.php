@@ -17,7 +17,8 @@ class Router {
         'Access-Control-Max-Age' => '3600',
         'Content-Type' => 'application/json; charset=UTF-8'
     ];
-    private array $middleware = [];
+    private array $routeMiddleware = [];
+    private ?string $currentRoute = null;
 
     public function __construct() {
         $this->uri = $this->parseUri();
@@ -57,6 +58,7 @@ class Router {
      * Add a route to the router
      */
     private function addRoute(string $method, string $path, callable $handler): self {
+        $this->currentRoute = "{$method}:{$path}";
         $this->routes[$method][$path] = $handler;
         return $this;
     }
@@ -64,8 +66,13 @@ class Router {
     /**
      * Add middleware to a route
      */
-    public function middleware(callable $middleware): self {
-        $this->middleware[] = $middleware;
+    public function middleware($middleware): self {
+        if ($this->currentRoute) {
+            if (!isset($this->routeMiddleware[$this->currentRoute])) {
+                $this->routeMiddleware[$this->currentRoute] = [];
+            }
+            $this->routeMiddleware[$this->currentRoute][] = $middleware;
+        }
         return $this;
     }
 
@@ -119,12 +126,17 @@ class Router {
     /**
      * Execute the middleware chain
      */
-    private function executeMiddleware(callable $handler): callable {
+    private function executeMiddleware(callable $handler, string $route): callable {
         $next = $handler;
         
-        // Execute middleware in reverse order
-        foreach (array_reverse($this->middleware) as $middleware) {
-            $next = $middleware($next);
+        if (isset($this->routeMiddleware[$route])) {
+            foreach (array_reverse($this->routeMiddleware[$route]) as $middleware) {
+                if (is_array($middleware)) {
+                    $next = call_user_func($middleware, $next);
+                } else {
+                    $next = $middleware($next);
+                }
+            }
         }
         
         return $next;
@@ -149,6 +161,7 @@ class Router {
             }
 
             $pathPattern = $this->getPathPattern($this->uri);
+            $route = "{$this->requestMethod}:{$pathPattern}";
 
             // Check if route exists
             if (!isset($this->routes[$this->requestMethod][$pathPattern])) {
@@ -156,10 +169,7 @@ class Router {
             }
 
             $handler = $this->routes[$this->requestMethod][$pathPattern];
-            $handler = $this->executeMiddleware($handler);
-            
-            // Clear middleware after handling request
-            $this->middleware = [];
+            $handler = $this->executeMiddleware($handler, $route);
             
             $handler();
 
