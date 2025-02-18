@@ -1,24 +1,36 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
+declare(strict_types=1);
 
-use App\Core\Router;
-use App\Core\RouteServiceProvider;
+/**
+ * NYT Application Entry Point
+ * 
+ * This is the front controller for the NYT application.
+ * All requests are routed through this file.
+ */
 
-// Load environment variables
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
+// Load composer autoloader
+require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Set error reporting
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+// Initialize and run the application
+use App\Core\App;
 
-// Initialize Router
-$router = new Router();
-
-// Load routes through service provider
-$routeProvider = new RouteServiceProvider($router, __DIR__ . '/..');
-$routeProvider->boot();
-
-// Handle the request
-$router->dispatch();
+try {
+    $app = App::getInstance();
+    $app->bootstrap();
+    $app->run();
+} catch (\Throwable $e) {
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+    
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Critical error occurred',
+        'code' => 500
+    ]);
+    exit(1);
+}
