@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Traits\ResponseTrait;
 
-class BaseController {
+abstract class BaseController
+{
     use ResponseTrait;
 }
