@@ -2,28 +2,19 @@
 
 namespace App\Http\Validation;
 
-use App\Models\User;
+use App\Models\ModelFactory;
 
 class ValidationRules
 {
-    private static ?User $userModel = null;
-
-    private static function getUserModel(): User
-    {
-        if (self::$userModel === null) {
-            self::$userModel = new User();
-        }
-        return self::$userModel;
-    }
-
     public static function unique(string $value, string $field, string $table): bool
     {
-        if ($table === 'users' && $field === 'email') {
-            return !self::getUserModel()->findByEmail($value);
+        try {
+            $model = ModelFactory::make($table);
+            return !$model->exists($field, $value);
+        } catch (\InvalidArgumentException $e) {
+            // If no model exists for the table, assume the value is unique
+            return true;
         }
-        
-        // Add more table checks as needed
-        return true;
     }
 
     public static function email(string $value): bool
