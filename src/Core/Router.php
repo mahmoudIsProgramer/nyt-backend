@@ -10,7 +10,7 @@ class Router {
     private array $routes = [];
     private array $uri;
     private string $requestMethod;
-    private array $headers = [
+    private array $apiHeaders = [
         'Access-Control-Allow-Origin' => '*',
         'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With',
@@ -58,6 +58,8 @@ class Router {
      * Add a route to the router
      */
     private function addRoute(string $method, string $path, callable $handler): self {
+        // Normalize the path
+        $path = trim($path, '/');
         $this->currentRoute = "{$method}:{$path}";
         $this->routes[$method][$path] = $handler;
         return $this;
@@ -117,9 +119,13 @@ class Router {
     /**
      * Set response headers
      */
-    private function setHeaders(): void {
-        foreach ($this->headers as $name => $value) {
-            header("$name: $value");
+    private function setHeaders(bool $isApi = false): void {
+        if ($isApi) {
+            foreach ($this->apiHeaders as $name => $value) {
+                header("$name: $value");
+            }
+        } else {
+            header('Content-Type: text/html; charset=UTF-8');
         }
     }
 
@@ -143,25 +149,56 @@ class Router {
     }
 
     /**
+     * Handle static files
+     */
+    private function handleStaticFile(string $path): bool {
+        $publicPath = dirname(__DIR__, 2) . '/public';
+        $filePath = $publicPath . '/' . $path;
+
+        if (file_exists($filePath) && is_file($filePath)) {
+            $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+            $contentType = match($ext) {
+                'css' => 'text/css',
+                'js' => 'application/javascript',
+                'png' => 'image/png',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'svg' => 'image/svg+xml',
+                default => 'application/octet-stream'
+            };
+
+            header("Content-Type: $contentType");
+            readfile($filePath);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Handle the request
      */
     public function dispatch(): void {
         try {
-            $this->setHeaders();
-
             // Handle CORS preflight request
             if ($this->requestMethod === 'OPTIONS') {
+                $this->setHeaders(true);
                 http_response_code(200);
                 exit;
             }
 
-            // Validate API request
-            if (empty($this->uri) || $this->uri[0] !== 'api') {
-                throw new Exception('Not Found', 404);
+            $pathPattern = $this->getPathPattern($this->uri);
+
+            // Try to serve static file first
+            if ($this->requestMethod === 'GET' && $this->handleStaticFile($pathPattern)) {
+                return;
             }
 
-            $pathPattern = $this->getPathPattern($this->uri);
             $route = "{$this->requestMethod}:{$pathPattern}";
+            $isApi = strpos($pathPattern, 'api/') === 0;
+
+            // Set appropriate headers based on route type
+            $this->setHeaders($isApi);
 
             // Check if route exists
             if (!isset($this->routes[$this->requestMethod][$pathPattern])) {
@@ -171,7 +208,18 @@ class Router {
             $handler = $this->routes[$this->requestMethod][$pathPattern];
             $handler = $this->executeMiddleware($handler, $route);
             
+            ob_start();
             $handler();
+            $content = ob_get_clean();
+
+            if ($isApi) {
+                echo $content;
+            } else {
+                // For HTML content, ensure we don't have any previous output
+                if (!headers_sent()) {
+                    echo $content;
+                }
+            }
 
         } catch (Exception $e) {
             $this->handleError($e);
@@ -203,8 +251,7 @@ class Router {
     /**
      * Add a custom header
      */
-    public function addHeader(string $name, string $value): self {
-        $this->headers[$name] = $value;
-        return $this;
+    public function addHeader(string $name, string $value): void {
+        $this->apiHeaders[$name] = $value;
     }
 }

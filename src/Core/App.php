@@ -7,7 +7,7 @@ use Dotenv\Dotenv;
 class App
 {
     private static ?App $instance = null;
-    private Router $router;
+    public Router $router;
 
     private function __construct()
     {

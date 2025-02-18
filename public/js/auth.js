@@ -58,7 +58,7 @@ async function handleLogin(event) {
 
         showAlert('Login successful! Redirecting...', 'success');
         setTimeout(() => {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard';
         }, 1500);
 
     } catch (error) {
@@ -95,7 +95,7 @@ async function handleRegister(event) {
 
         showAlert('Registration successful! Redirecting...', 'success');
         setTimeout(() => {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard';
         }, 1500);
 
     } catch (error) {
@@ -107,7 +107,7 @@ async function handleRegister(event) {
 function checkAuthStatus() {
     const token = localStorage.getItem('token');
     if (token) {
-        window.location.href = '/dashboard.html';
+        window.location.href = '/dashboard';
     }
 }
 

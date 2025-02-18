@@ -4,10 +4,13 @@ use App\Controllers\ArticlesController;
 use App\Controllers\ArticleController;
 use App\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
+use App\Core\App;
 
 /**
  * @var \App\Core\Router $router
  */
+
+$router = App::getInstance()->router;
 
 $articlesController = new ArticlesController();
 $articleController = new ArticleController();
@@ -32,6 +35,10 @@ $router->get('api/articles/{url}', function(string $articleUrl) use ($articlesCo
 });
 
 // Protected Routes (require authentication)
+$router->get('api/user', function() use ($authController) {
+    $authController->getUser();
+})->middleware([AuthMiddleware::class, 'authenticate']);
+
 $router->post('api/articles/favorites', function() use ($articleController) {
     $articleController->addToFavorites();
 })->middleware([AuthMiddleware::class, 'authenticate']);
