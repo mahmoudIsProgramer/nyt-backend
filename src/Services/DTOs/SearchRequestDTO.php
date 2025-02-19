@@ -105,7 +105,7 @@ class SearchRequestDTO {
             facetFilter: isset($request['facet_filter']) ? filter_var($request['facet_filter'], FILTER_VALIDATE_BOOLEAN) : null,
             fl: isset($request['fl']) ? explode(',', $request['fl']) : null,
             fq: $request['fq'] ?? null,
-            page: isset($request['page']) ? (int)$request['page'] : 0,
+            page: isset($request['page']) ? ((int)$request['page'] - 1) : 0,
             sort: $request['sort'] ?? 'relevance'
         );
     }
