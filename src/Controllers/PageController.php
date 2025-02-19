@@ -2,14 +2,20 @@
 
 namespace App\Controllers;
 
-class PageController extends BaseController
+use App\Core\View;
+
+class PageController
 {
-    public function home(): void
+    public function home()
     {
-        $this->render('home');
+        echo View::render('home', [
+            'title' => 'Authentication - NYT',
+            'styles' => ['/css/auth.css'],
+            'scripts' => ['/js/auth.js']
+        ]);
     }
 
-    public function dashboard(): void
+    public function dashboard()
     {
         // Check authentication
         $token = $_COOKIE['token'] ?? null;
@@ -18,20 +24,8 @@ class PageController extends BaseController
             exit;
         }
         
-        $this->render('dashboard');
-    }
-
-    protected function render(string $view, array $data = []): void
-    {
-        // Clean any previous output
-        if (ob_get_level()) {
-            ob_end_clean();
-        }
-
-        // Extract data to make it available in the view
-        extract($data);
-
-        // Include the view file
-        require dirname(__DIR__, 2) . "/views/{$view}.php";
+        echo View::render('dashboard', [
+            'title' => 'Dashboard - NYT'
+        ]);
     }
 }
