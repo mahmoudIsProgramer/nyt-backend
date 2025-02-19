@@ -10,7 +10,7 @@ class PageController
     {
         echo View::render('home', [
             'title' => 'Authentication - NYT',
-            'styles' => ['/css/auth.css'],
+            'styles' => ['/css/app.css'],
             'scripts' => ['/js/auth.js']
         ]);
     }
