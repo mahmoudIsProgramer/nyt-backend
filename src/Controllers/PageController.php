@@ -4,9 +4,9 @@ namespace App\Controllers;
 
 use App\Core\View;
 
-class PageController
+class PageController extends BaseController
 {
-    public function home()
+    public function home(): void
     {
         echo View::render('home', [
             'title' => 'Authentication - NYT',
@@ -26,6 +26,18 @@ class PageController
         
         echo View::render('dashboard', [
             'title' => 'Dashboard - NYT'
+        ]);
+    }
+
+    public function articles(): void
+    {
+        $query = $_GET['q'] ?? '';
+        
+        echo View::render('articles', [
+            'title' => 'Search Articles - NYT',
+            'styles' => ['/css/app.css', '/css/articles.css'],
+            'scripts' => ['/js/articles.js'],
+            'query' => $query
         ]);
     }
 }

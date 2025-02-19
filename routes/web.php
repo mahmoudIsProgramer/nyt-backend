@@ -16,3 +16,8 @@ $router->get('', function() use ($pageController) { // Root path
 $router->get('dashboard', function() use ($pageController) {
     $pageController->dashboard();
 });
+
+// Articles Routes
+$router->get('articles', function() use ($pageController) {
+    $pageController->articles();
+});

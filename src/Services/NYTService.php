@@ -11,7 +11,7 @@ use App\Services\DTOs\{ArticleDTO, PaginationDTO, SearchRequestDTO};
 
 class NYTService {
     private const BASE_URL = 'https://api.nytimes.com/svc/search/v2/';
-    private const ITEMS_PER_PAGE = 10;
+    private const ITEMS_PER_PAGE = 12;
     
     private HttpClientInterface $client;
     private string $apiKey;

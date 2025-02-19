@@ -24,12 +24,12 @@ class ArticlesController extends BaseController {
             [$articles, $pagination] = $this->nytService->searchArticles($request);
             
             $resource = new ArticleCollectionResource($articles, $pagination);
-            $this->jsonResponse($resource->toArray());
+            $this->success($resource->toArray());
 
         } catch (\InvalidArgumentException $e) {
-            $this->errorResponse($e->getMessage(), 400);
+            $this->error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+            $this->error($e->getMessage(), $e->getCode() ?: 500);
         }
     }
 
@@ -42,15 +42,15 @@ class ArticlesController extends BaseController {
             $article = $this->nytService->getArticle($articleUrl);
             
             if (!$article) {
-                $this->errorResponse('Article not found', 404);
+                $this->notFound('Article not found');
                 return;
             }
 
             $resource = new ArticleResource($article);
-            $this->jsonResponse($resource->toArray());
+            $this->success($resource->toArray());
 
         } catch (\Exception $e) {
-            $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+            $this->error($e->getMessage(), $e->getCode() ?: 500);
         }
     }
 }
