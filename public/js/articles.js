@@ -169,12 +169,16 @@ class ArticlesManager {
             // Update pagination if meta data is available
             if (data.data.pagination) {
                 this.updatePagination(data.data.pagination);
+                this.paginationElement.style.display = 'flex';
+            } else {
+                this.paginationElement.style.display = 'none';
             }
         } else {
             this.articlesGrid.innerHTML = `<div class="no-results">
                 <p>${data.message || 'No articles found for your search'}</p>
                 <p>Try adjusting your search terms or browse our latest articles.</p>
             </div>`;
+            this.paginationElement.style.display = 'none';
         }
     }
 
@@ -316,12 +320,19 @@ class ArticlesManager {
     }
 
     showLoading() {
-        this.loadingElement.classList.remove('hidden');
-        // this.articlesGrid.innerHTML = '';
+        // Hide articles and pagination
+        if (this.articlesGrid) this.articlesGrid.style.display = 'none';
+        if (this.paginationElement) this.paginationElement.style.display = 'none';
+        // Show loading spinner
+        if (this.loadingElement) this.loadingElement.classList.remove('hidden');
     }
 
     hideLoading() {
-        this.loadingElement.classList.add('hidden');
+        // Show articles and pagination
+        if (this.articlesGrid) this.articlesGrid.style.display = 'grid';
+        if (this.paginationElement) this.paginationElement.style.display = 'flex';
+        // Hide loading spinner
+        if (this.loadingElement) this.loadingElement.classList.add('hidden');
     }
 
     showError(message) {
