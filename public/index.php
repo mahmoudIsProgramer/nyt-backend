@@ -12,25 +12,15 @@ declare(strict_types=1);
 // Load composer autoloader
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Load environment variables
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
-
 use App\Core\App;
 use Dotenv\Dotenv;
-
-// Set error reporting based on environment
-$isProduction = getenv('APP_ENV') === 'production';
-error_reporting($isProduction ? 0 : E_ALL);
-ini_set('display_errors', $isProduction ? '0' : '1');
 
 try {
     // Initialize the application
     $app = App::getInstance();
     
-    // Load routes
-    require dirname(__DIR__) . '/routes/web.php';
-    require dirname(__DIR__) . '/routes/api.php';
+    // Bootstrap the application
+    $app->bootstrap();
     
     // Run the application
     $app->run();
