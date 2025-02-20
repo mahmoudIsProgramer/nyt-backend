@@ -31,12 +31,29 @@ class ArticlesManager {
             this.toggleAdvancedButton.textContent = isHidden ? 'Hide Advanced' : 'Advanced Search';
         });
 
-        // Initial search if query exists
+        // Check for URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('q')) {
             this.searchInput.value = urlParams.get('q');
             this.populateAdvancedFields(urlParams);
             this.handleSearch();
+        } else {
+            // If no search query, load default articles
+            this.loadDefaultArticles();
+        }
+    }
+
+    async loadDefaultArticles() {
+        this.showLoading();
+        try {
+            const params = new URLSearchParams();
+            params.set('sort', 'relevance'); // Default sorting
+            await this.searchArticles(params);
+        } catch (error) {
+            console.error('Error loading default articles:', error);
+            this.showError('Error loading articles');
+        } finally {
+            this.hideLoading();
         }
     }
 
