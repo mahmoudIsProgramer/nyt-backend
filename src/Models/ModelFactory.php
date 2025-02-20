@@ -7,6 +7,7 @@ class ModelFactory
     private static array $instances = [];
     private static array $modelMap = [
         'users' => User::class,
+        'favorites' => Favorite::class,
         // Add more model mappings here
     ];
 
