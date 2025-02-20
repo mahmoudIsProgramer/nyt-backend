@@ -19,6 +19,7 @@ class Router {
     ];
     private array $routeMiddleware = [];
     private ?string $currentRoute = null;
+    private string $currentPrefix = '';
 
     public function __construct() {
         $this->uri = $this->parseUri();
@@ -55,11 +56,30 @@ class Router {
     }
 
     /**
+     * Group routes with shared attributes
+     */
+    public function group(array $attributes, callable $callback): void {
+        // Store the previous prefix
+        $previousPrefix = $this->currentPrefix;
+        
+        // Set the new prefix by combining the previous prefix with the new one
+        if (isset($attributes['prefix'])) {
+            $this->currentPrefix = $previousPrefix . '/' . trim($attributes['prefix'], '/');
+        }
+        
+        // Execute the callback that contains the routes
+        $callback();
+        
+        // Restore the previous prefix
+        $this->currentPrefix = $previousPrefix;
+    }
+
+    /**
      * Add a route to the router
      */
     private function addRoute(string $method, string $path, callable $handler): self {
-        // Normalize the path
-        $path = trim($path, '/');
+        // Normalize the path with prefix
+        $path = trim($this->currentPrefix . '/' . trim($path, '/'), '/');
         $this->currentRoute = "{$method}:{$path}";
         $this->routes[$method][$path] = $handler;
         return $this;
