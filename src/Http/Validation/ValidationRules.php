@@ -6,6 +6,19 @@ use App\Models\ModelFactory;
 
 class ValidationRules
 {
+
+
+    public static function exists($value, string $field, string $table): bool
+    {
+        try {
+            $model = ModelFactory::make($table);
+            return $model->exists($field, $value);
+        } catch (\InvalidArgumentException $e) {
+            // If no model exists for the table, return false
+            return false;
+        }
+    }
+    
     public static function unique(string $value, string $field, string $table): bool
     {
         try {

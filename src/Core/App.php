@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Utils\Helper;
 use Dotenv\Dotenv;
 
 class App
@@ -38,12 +39,15 @@ class App
     private function configureErrorHandling(): void
     {
         $isProduction = getenv('APP_ENV') === 'production';
+
+        // Helper::dd($isProduction);
         
         error_reporting($isProduction ? 0 : E_ALL);
         ini_set('display_errors', $isProduction ? '0' : '1');
-
+        
         set_error_handler([$this, 'handleError']);
         set_exception_handler([$this, 'handleException']);
+
     }
 
     public function handleError(int $errno, string $errstr, string $errfile, int $errline): bool

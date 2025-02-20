@@ -39,8 +39,8 @@ $router->get('/user', function() use ($authController) {
     $authController->getUser();
 })->middleware([AuthMiddleware::class, 'authenticate']);
 
-$router->post('/articles/favorites', function() use ($favoriteController) {
-    $favoriteController->toggleFavorites();
+$router->post('/articles/favorites/toggle', function() use ($favoriteController) {
+    $favoriteController->toggleFavorite();
 })->middleware([AuthMiddleware::class, 'authenticate']);
 
 $router->get('/articles/favorites', function() use ($favoriteController) {
