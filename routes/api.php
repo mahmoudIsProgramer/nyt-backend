@@ -1,7 +1,7 @@
 <?php
 
 use App\Controllers\ArticlesController;
-use App\Controllers\ArticleController;
+use App\Controllers\FavoriteController;
 use App\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
 use App\Core\App;
@@ -13,7 +13,7 @@ use App\Core\App;
 $router = App::getInstance()->router;
 
 $articlesController = new ArticlesController();
-$articleController = new ArticleController();
+$favoriteController = new FavoriteController();
 $authController = new AuthController();
 
 // Public Auth Routes (no authentication required)
@@ -39,10 +39,10 @@ $router->get('/user', function() use ($authController) {
     $authController->getUser();
 })->middleware([AuthMiddleware::class, 'authenticate']);
 
-$router->post('/articles/favorites', function() use ($articleController) {
-    $articleController->addToFavorites();
+$router->post('/articles/favorites', function() use ($favoriteController) {
+    $favoriteController->toggleFavorites();
 })->middleware([AuthMiddleware::class, 'authenticate']);
 
-$router->get('/articles/favorites', function() use ($articleController) {
-    $articleController->getFavorites();
+$router->get('/articles/favorites', function() use ($favoriteController) {
+    $favoriteController->getFavorites();
 })->middleware([AuthMiddleware::class, 'authenticate']);
