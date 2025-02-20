@@ -15,7 +15,7 @@ try {
     }
 
     // Initialize database
-    $db = new SQLite3(__DIR__ . '/nyt.sqlite');
+    $db = new SQLite3(__DIR__ . '/database.sqlite');
     
     // Enable foreign key support
     $db->exec('PRAGMA foreign_keys = ON;');

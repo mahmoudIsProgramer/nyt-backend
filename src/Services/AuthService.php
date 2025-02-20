@@ -28,12 +28,12 @@ class AuthService
      */
     public function register(UserDTO $userDTO): array
     {
-        $hashedPassword = password_hash($userDTO->password, PASSWORD_DEFAULT);
+        // $hashedPassword = password_hash($userDTO->password, PASSWORD_DEFAULT);
         
         $userId = $this->userModel->create([
             'name' => $userDTO->name,
             'email' => $userDTO->email,
-            'password' => $hashedPassword
+            'password' => $userDTO->password
         ]);
         if (!$userId) {
             throw new \RuntimeException('Failed to create user');
@@ -57,7 +57,7 @@ class AuthService
      * @throws \InvalidArgumentException If credentials are invalid
      * @return array
      */
-    public function authenticate(string $email, string $password): ?array
+    public function authenticate(string $email, string $password): array
     {
         $user = $this->userModel->findByEmail($email);
         if (!$user || !password_verify($password, $user['password'])) {

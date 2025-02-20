@@ -11,7 +11,7 @@ class Database {
 
     private function __construct() {
         try {
-            $dbPath = dirname(__DIR__, 2) . '/database/nyt.sqlite';
+            $dbPath = dirname(__DIR__, 2) . '/database/database.sqlite';
             $this->connection = new SQLite3($dbPath);
             
             // Enable foreign key support
