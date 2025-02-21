@@ -107,38 +107,22 @@ abstract class Model
             return false;
         }
 
-        try {
-            $fields = array_keys($this->attributes);
-            $placeholders = array_map(fn($field) => ":$field", $fields);
-            
-            $sql = "INSERT INTO {$this->table} (" . implode(', ', $fields) . 
-                   ") VALUES (" . implode(', ', $placeholders) . ")";
-            
-            error_log("Executing SQL: " . $sql);
-            $stmt = $this->db->prepare($sql);
-            
-            foreach ($this->attributes as $field => $value) {
-                $type = $this->getFieldType($field);
-                $this->db->bindValue($stmt, ":$field", $value, $type);
-                error_log("Binding $field: $value (type: $type)");
-            }
-            
-            $result = $this->db->execute($stmt);
-            
-            if (!$result) {
-                error_log("Execute failed");
-                return false;
-            }
-            
-            $this->attributes[$this->primaryKey] = $this->db->lastInsertRowID();
-            error_log("Last insert ID: " . $this->attributes[$this->primaryKey]);
-            
-            return true;
-            
-        } catch (\Exception $e) {
-            error_log("Save error: " . $e->getMessage());
+        $fields = array_keys($this->attributes);
+        $bindings = [];
+        
+        foreach ($this->attributes as $field => $value) {
+            $bindings[$field] = [
+                'value' => $value,
+                'type' => $this->getFieldType($field)
+            ];
+        }
+        
+        if (!$this->db->executeInsert($this->table, $fields, $this->attributes, $bindings)) {
             return false;
         }
+        
+        $this->attributes[$this->primaryKey] = $this->db->lastInsertRowID();
+        return true;
     }
 
     public static function find(int|string $id): ?static
@@ -169,11 +153,7 @@ abstract class Model
      */
     public function findBy(string $field, mixed $value): ?array
     {
-        return $this->executeQuery(
-            "SELECT * FROM {$this->table} WHERE {$field} = :value LIMIT 1",
-            [':value' => $value],
-            PDO::PARAM_STR
-        );
+        return $this->db->executeFindBy($this->table, $field, $value, $this->getFieldType($field));
     }
 
     /**
@@ -181,11 +161,7 @@ abstract class Model
      */
     public function findById(int $id): ?array
     {
-        return $this->executeQuery(
-            "SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id LIMIT 1",
-            [':id' => $id],
-            PDO::PARAM_INT
-        );
+        return $this->db->executeFindById($this->table, $this->primaryKey, $id);
     }
 
     /**
@@ -201,15 +177,7 @@ abstract class Model
      */
     public function fetchAll(): array
     {
-        try {
-            $stmt = $this->db->prepare("SELECT * FROM {$this->table}");
-            $result = $this->db->execute($stmt);
-            
-            return $this->db->fetchAll($result);
-        } catch (\Exception $e) {
-            $this->logError('fetching all records', $e);
-            return [];
-        }
+        return $this->db->executeFetchAll($this->table);
     }
 
     /**
@@ -303,28 +271,8 @@ abstract class Model
 
     public function first(): ?array
     {
-        try {
-            $sql = "SELECT * FROM {$this->table}";
-            $params = [];
-            
-            if (!empty($this->query['where'])) {
-                $where = $this->query['where'][0];
-                $sql .= " WHERE {$where[0]} {$where[1]} :value LIMIT 1";
-                $params[':value'] = $where[2];
-            }
-            
-            return $this->executeQuery(
-                $sql,
-                $params,
-                $this->getFieldType($this->query['where'][0][0] ?? 'default')
-            );
-            
-        } catch (\Exception $e) {
-            error_log("Error in first(): " . $e->getMessage());
-            return null;
-        } finally {
-            // Reset query builder
-            $this->query = [];
-        }
+        $result = $this->db->executeWhereFirst($this->table, $this->query['where'] ?? []);
+        $this->query = []; // Reset query builder
+        return $result;
     }
 }

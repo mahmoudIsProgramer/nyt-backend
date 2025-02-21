@@ -15,5 +15,8 @@ interface DatabaseDriverInterface
     public function executeQuery(string $sql, array $params, int $paramType): ?array;
     public function executeDelete(string $table, string $primaryKey, mixed $id): bool;
     public function getFieldType(string $field): int;
+    public function executeFindBy(string $table, string $field, mixed $value, int $type): ?array;
+    public function executeFindById(string $table, string $primaryKey, mixed $id): ?array;
+    public function executeFetchAll(string $table, string $primaryKey, mixed $id): array;
     
 }

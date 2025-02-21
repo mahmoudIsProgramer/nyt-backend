@@ -94,4 +94,79 @@ class SQLiteDriver implements DatabaseDriverInterface
             default => \PDO::PARAM_STR
         };
     }
+
+    public function executeInsert(string $table, array $fields, array $values, array $bindings): bool
+    {
+        try {
+            $placeholders = array_map(fn($field) => ":$field", $fields);
+            
+            $sql = "INSERT INTO {$table} (" . implode(', ', $fields) . 
+                   ") VALUES (" . implode(', ', $placeholders) . ")";
+            
+            $stmt = $this->prepare($sql);
+            
+            foreach ($bindings as $field => $binding) {
+                $this->bindValue($stmt, ":$field", $binding['value'], $binding['type']);
+            }
+            
+            return (bool) $this->execute($stmt);
+        } catch (\Exception $e) {
+            error_log("Insert error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function executeFindById(string $table, string $primaryKey, mixed $id): ?array
+    {
+        return $this->executeQuery(
+            "SELECT * FROM {$table} WHERE {$primaryKey} = :id LIMIT 1",
+            [':id' => $id],
+            \PDO::PARAM_INT
+        );
+    }
+
+    public function executeFindBy(string $table, string $field, mixed $value, int $paramType): ?array
+    {
+        return $this->executeQuery(
+            "SELECT * FROM {$table} WHERE {$field} = :value LIMIT 1",
+            [':value' => $value],
+            $paramType
+        );
+    }
+
+    public function executeFetchAll(string $table, string $primaryKey, mixed $id): array
+    {
+        try {
+            $stmt = $this->prepare("SELECT * FROM {$table} WHERE {$primaryKey} = :id");
+            $this->bindValue($stmt, ':id', $id, \PDO::PARAM_INT);
+            $result = $this->execute($stmt);
+            return $this->fetchAll($result);
+        } catch (\Exception $e) {
+            error_log("Error fetching all records: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function executeWhereFirst(string $table, array $where): ?array
+    {
+        try {
+            $sql = "SELECT * FROM {$table}";
+            $params = [];
+            
+            if (!empty($where)) {
+                $condition = $where[0];
+                $sql .= " WHERE {$condition[0]} {$condition[1]} :value LIMIT 1";
+                $params[':value'] = $condition[2];
+            }
+            
+            return $this->executeQuery(
+                $sql,
+                $params,
+                $this->getFieldType($where[0][0] ?? 'default')
+            );
+        } catch (\Exception $e) {
+            error_log("Error in whereFirst: " . $e->getMessage());
+            return null;
+        }
+    }
 }
