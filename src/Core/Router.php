@@ -30,15 +30,15 @@ class Router {
     /**
      * Register a GET route
      */
-    public function get(string $path, callable $handler): self {
-        return $this->addRoute('GET', $path, $handler);
+    public function get(string $path, callable $handler, array $middleware = []): self {
+        return $this->addRoute('GET', $path, $handler, $middleware);
     }
 
     /**
      * Register a POST route
      */
-    public function post(string $path, callable $handler): self {
-        return $this->addRoute('POST', $path, $handler);
+    public function post(string $path, callable $handler, array $middleware = []): self {
+        return $this->addRoute('POST', $path, $handler, $middleware);
     }
 
     /**
@@ -77,11 +77,14 @@ class Router {
     /**
      * Add a route to the router
      */
-    private function addRoute(string $method, string $path, callable $handler): self {
+    private function addRoute(string $method, string $path, callable $handler, array $middleware = []): self {
         // Normalize the path with prefix
         $path = trim($this->currentPrefix . '/' . trim($path, '/'), '/');
         $this->currentRoute = "{$method}:{$path}";
-        $this->routes[$method][$path] = $handler;
+        $this->routes[$method][$path] = [
+            'callback' => $handler,
+            'middleware' => $middleware
+        ];
         return $this;
     }
 
@@ -225,7 +228,17 @@ class Router {
                 throw new Exception('Not Found', 404);
             }
 
-            $handler = $this->routes[$this->requestMethod][$pathPattern];
+            $handler = $this->routes[$this->requestMethod][$pathPattern]['callback'];
+            $middleware = $this->routes[$this->requestMethod][$pathPattern]['middleware'];
+
+            // Execute middleware
+            foreach ($middleware as $middlewareClass) {
+                $middlewareInstance = new $middlewareClass();
+                if (!$middlewareInstance->handle()) {
+                    return;
+                }
+            }
+
             $handler = $this->executeMiddleware($handler, $route);
             
             ob_start();

@@ -4,7 +4,7 @@ use App\Controllers\ArticlesController;
 use App\Controllers\FavoriteController;
 use App\Controllers\AuthController;
 use App\Core\App;
-use App\Utils\Helper;
+use App\Middleware\JWTAuthMiddleware;
 
 /**
  * @var \App\Core\Router $router
@@ -37,12 +37,12 @@ $router->get('/articles/{url}', function(string $articleUrl) use ($articlesContr
 // Protected Routes (require authentication)
 $router->get('/user', function() use ($authController) { 
     $authController->getUser();
-});
+}, [JWTAuthMiddleware::class]);
 
 $router->post('/articles/favorites/toggle', function() use ($favoriteController) {
     $favoriteController->toggleFavorite();
-});
+}, [JWTAuthMiddleware::class]);
 
 $router->get('/articles/favorites', function() use ($favoriteController) {
     $favoriteController->getFavorites();
-});
+}, [JWTAuthMiddleware::class]);
