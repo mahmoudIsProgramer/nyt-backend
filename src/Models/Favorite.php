@@ -9,6 +9,13 @@ class Favorite extends Model
     protected array $fillable = [
         'user_id',
         'article_id',
+        'web_url',
+        'headline',
+        'snippet',
+        'pub_date',
+        'source',
+        'image_url',
+        'author',
         'created_at'
     ];
 

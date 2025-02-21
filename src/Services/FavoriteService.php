@@ -21,12 +21,12 @@ class FavoriteService
      *
      * @throws Exception
      */
-    public function toggleFavorite(int $userId, string $articleId): array
+    public function toggleFavorite(int $userId, string $articleId, array $articleData): array
     {
         try {
             return $this->checkIfFavored($userId, $articleId)
                 ? $this->handleUnfavorite($userId, $articleId)
-                : $this->handleFavorite($userId, $articleId);
+                : $this->handleFavorite($userId, $articleId, $articleData);
         } catch (\Exception $e) {
             throw new Exception('Failed to toggle favorite: ' . $e->getMessage());
         }
@@ -67,9 +67,9 @@ class FavoriteService
     /**
      * Handle favoriting an article
      */
-    private function handleFavorite(int $userId, string $articleId): array
+    private function handleFavorite(int $userId, string $articleId, array $articleData): array
     {
-        $this->addFavorite($userId, $articleId);
+        $this->addFavorite($userId, $articleId, $articleData);
         return [
             'status' => true,
             'article_id' => $articleId,
@@ -100,15 +100,24 @@ class FavoriteService
         return $this->favorite->isFavored($userId, $articleId);
     }
 
-     
-    private function addFavorite(int $userId, string $articleId): void
+    private function addFavorite(int $userId, string $articleId, array $articleData): void
     {
         $result = Favorite::create([
             'user_id' => $userId,
             'article_id' => $articleId,
+            'web_url' => $articleData['web_url'],
+            'headline' => $articleData['headline'],
+            'snippet' => $articleData['snippet'] ?? null,
+            'pub_date' => $articleData['pub_date'] ?? null,
+            'source' => $articleData['source'] ?? null,
+            'image_url' => $articleData['image_url'] ?? null,
+            'author' => $articleData['author'] ?? null,
             'created_at' => date('Y-m-d H:i:s')
         ]);
-         
+        
+        if (!$result) {
+            throw new \RuntimeException('Failed to add favorite');
+        }
     }
 
     private function removeFavorite(int $userId, string $articleId): void
