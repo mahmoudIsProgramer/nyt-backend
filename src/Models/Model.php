@@ -177,7 +177,7 @@ abstract class Model
      */
     public function fetchAll(): array
     {
-        return $this->db->executeFetchAll($this->table);
+        return $this->db->executeFetchAll($this->table, $this->primaryKey, null);
     }
 
     /**
