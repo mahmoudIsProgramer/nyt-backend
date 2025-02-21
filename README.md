@@ -42,6 +42,5 @@ A PHP application that allows users to search, view, and save favorite articles 
 - Save favorite articles
 - View and manage favorite articles
 - RESTful API design
-
-## Project Structure
+ 
 
