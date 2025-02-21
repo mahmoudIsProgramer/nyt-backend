@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\User;
 use App\DTOs\UserDTO;
 use App\Utils\Helper;
+use App\Utils\JWTHelper;
 use Firebase\JWT\JWT;
+use App\Http\Resources\UserResource;
 
 class AuthService
 {
@@ -34,7 +36,7 @@ class AuthService
             'name' => $userDTO->name,
             'email' => $userDTO->email,
             'password' => $userDTO->password,
-            'created_at' => date('Y-m-d H:i:s')
+            'created_at' => $userDTO->created_at
         ]);
         // Helper::dd($user->toArray());
         if (!$user) {
@@ -92,9 +94,11 @@ class AuthService
             }
 
             $userData = $user->toArray();
+            Helper::dd($userData);
             unset($userData['password']); // Remove sensitive data
             
-            return $userData;
+            $userDTO = UserDTO::fromArray($userData);
+            return (new UserResource($userDTO))->toArray();
             
         } catch (\Exception $e) {
             error_log("Error fetching user: " . $e->getMessage());
@@ -104,12 +108,10 @@ class AuthService
 
     private function generateToken(int $userId): string
     {
-        $payload = [
-            'sub' => $userId,
-            'iat' => time(),
-            'exp' => time() + (60 * 60 * 24) // 24 hours
-        ];
-
-        return JWT::encode($payload, $this->jwtSecret, 'HS256');
+        return JWTHelper::generateToken(
+            userId: $userId,
+            secret: $this->jwtSecret,
+            expiry: $this->jwtExpiry
+        );
     }
 }

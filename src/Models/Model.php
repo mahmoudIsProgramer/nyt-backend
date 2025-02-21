@@ -46,7 +46,10 @@ abstract class Model
 
     public function toArray(): array
     {
-        return $this->attributes;
+        return array_merge(
+            [$this->primaryKey => $this->attributes[$this->primaryKey] ?? null], 
+            $this->attributes
+        );
     }
 
     /**

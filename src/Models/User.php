@@ -13,7 +13,8 @@ class User extends Model
         'password',
         'created_at'
     ];
-    
+
+    protected string $primaryKey = 'id';
 
     public function findByEmail(string $email): ?array
     {
