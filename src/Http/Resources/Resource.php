@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 abstract class Resource {
     protected $resource;
+    protected $additional;
 
     public function __construct($resource) {
         $this->resource = $resource;

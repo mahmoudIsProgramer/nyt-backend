@@ -28,14 +28,14 @@ $router->post('/auth/login', function() use ($authController) {
 // Public Article Routes
 $router->get('/articles/search', function() use ($articlesController) {
     $articlesController->search();
-});
+}, [JWTAuthMiddleware::class]);
 
 $router->get('/articles/{url}', function(string $articleUrl) use ($articlesController) {
     $articlesController->getArticle($articleUrl);
-});
+}, [JWTAuthMiddleware::class]);
 
 // Protected Routes (require authentication)
-$router->get('/user', function() use ($authController) { 
+$router->get('/get-user-profile', function() use ($authController) { 
     $authController->getUser();
 }, [JWTAuthMiddleware::class]);
 

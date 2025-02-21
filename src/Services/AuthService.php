@@ -76,6 +76,32 @@ class AuthService
         ];
     }
 
+    /**
+     * Get user by ID
+     *
+     * @param int $userId
+     * @return array|null
+     */
+    public function getUserById(int $userId): ?array
+    {
+        try {
+            $user = $this->userModel->find($userId);
+            
+            if (!$user) {
+                return null;
+            }
+
+            $userData = $user->toArray();
+            unset($userData['password']); // Remove sensitive data
+            
+            return $userData;
+            
+        } catch (\Exception $e) {
+            error_log("Error fetching user: " . $e->getMessage());
+            return null;
+        }
+    }
+
     private function generateToken(int $userId): string
     {
         $payload = [

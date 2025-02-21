@@ -58,4 +58,30 @@ class AuthController extends BaseController
             $this->error('Server error', 500);
         }
     }
+
+    public function getUser(): void
+    {
+        try {
+            $userId = $_REQUEST['user_id'] ?? null;
+            
+            if (!$userId) {
+                $this->unauthorized('User not authenticated');
+                return;
+            }
+
+            $user = $this->authService->getUserById($userId);
+            
+            if (!$user) {
+                $this->notFound('User not found');
+                return;
+            }
+
+            $this->success([
+                'user' => $user
+            ], 'User retrieved successfully');
+            
+        } catch (\Exception $e) {
+            $this->error('Error fetching user details', 500);
+        }
+    }
 }
