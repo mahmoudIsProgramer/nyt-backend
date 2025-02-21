@@ -58,39 +58,16 @@ abstract class Model
             $instance = new static();
             $instance->fill($attributes);
             
-            if (!$instance->save()) {
-                error_log("Failed to save model");
-                return null;
-            }
-
-            // Log the inserted ID for debugging
-            $insertedId = $instance->attributes[$instance->primaryKey] ?? null;
-            error_log("Inserted ID: " . $insertedId);
-            
-            if (!$insertedId) {
-                error_log("No ID returned after save");
-                return null;
-            }
-            
-            // Get the newly created record
-            $sql = "SELECT * FROM {$instance->table} WHERE {$instance->primaryKey} = :id LIMIT 1";
-            $stmt = $instance->db->prepare($sql);
-            $instance->db->bindValue($stmt, ':id', $insertedId, PDO::PARAM_INT);
-            
-            $result = $instance->db->execute($stmt);
-            $data = $instance->db->fetchArray($result);
+            $data = $instance->db->executeCreate($instance->table, $instance->primaryKey, $instance->attributes);
             
             if (!$data) {
-                error_log("Failed to fetch created record");
                 return null;
             }
             
-            // Create new instance with fetched data
             $newInstance = new static();
             $newInstance->attributes = $data;
             
             return $newInstance;
-            
         } catch (\Exception $e) {
             error_log("Create error: " . $e->getMessage());
             return null;
@@ -107,21 +84,13 @@ abstract class Model
             return false;
         }
 
-        $fields = array_keys($this->attributes);
-        $bindings = [];
+        $data = $this->db->executeCreate($this->table, $this->primaryKey, $this->attributes);
         
-        foreach ($this->attributes as $field => $value) {
-            $bindings[$field] = [
-                'value' => $value,
-                'type' => $this->getFieldType($field)
-            ];
-        }
-        
-        if (!$this->db->executeInsert($this->table, $fields, $this->attributes, $bindings)) {
+        if (!$data) {
             return false;
         }
         
-        $this->attributes[$this->primaryKey] = $this->db->lastInsertRowID();
+        $this->attributes = $data;
         return true;
     }
 
@@ -235,32 +204,7 @@ abstract class Model
      */
     protected function deleteWhere(array $conditions): bool
     {
-        try {
-            $where = [];
-            $bindings = [];
-            
-            foreach ($conditions as $field => $value) {
-                $where[] = "{$field} = :{$field}";
-                $bindings[":{$field}"] = $value;
-            }
-
-            $sql = "DELETE FROM {$this->table} WHERE " . implode(' AND ', $where);
-            $stmt = $this->db->prepare($sql);
-            
-            foreach ($bindings as $param => $value) {
-                $this->db->bindValue(
-                    $stmt,
-                    $param,
-                    $value,
-                    $this->getFieldType(ltrim($param, ':'))
-                );
-            }
-            
-            return (bool) $this->db->execute($stmt);
-        } catch (\Exception $e) {
-            error_log("Error deleting from {$this->table}: " . $e->getMessage());
-            return false;
-        }
+        return $this->db->executeDeleteWhere($this->table, $conditions);
     }
 
     public function where(string $column, string $operator, $value): self

@@ -169,4 +169,66 @@ class SQLiteDriver implements DatabaseDriverInterface
             return null;
         }
     }
+
+    public function executeCreate(string $table, string $primaryKey, array $attributes): ?array 
+    {
+        try {
+            $fields = array_keys($attributes);
+            $bindings = [];
+            
+            foreach ($attributes as $field => $value) {
+                $bindings[$field] = [
+                    'value' => $value,
+                    'type' => $this->getFieldType($field)
+                ];
+            }
+            
+            if (!$this->executeInsert($table, $fields, $attributes, $bindings)) {
+                error_log("Failed to save model");
+                return null;
+            }
+
+            $insertedId = $this->lastInsertRowID();
+            
+            if (!$insertedId) {
+                error_log("No ID returned after save");
+                return null;
+            }
+            
+            return $this->executeFindById($table, $primaryKey, $insertedId);
+        } catch (\Exception $e) {
+            error_log("Create error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function executeDeleteWhere(string $table, array $conditions): bool 
+    {
+        try {
+            $where = [];
+            $bindings = [];
+            
+            foreach ($conditions as $field => $value) {
+                $where[] = "{$field} = :{$field}";
+                $bindings[":{$field}"] = $value;
+            }
+
+            $sql = "DELETE FROM {$table} WHERE " . implode(' AND ', $where);
+            $stmt = $this->prepare($sql);
+            
+            foreach ($bindings as $param => $value) {
+                $this->bindValue(
+                    $stmt,
+                    $param,
+                    $value,
+                    $this->getFieldType(ltrim($param, ':'))
+                );
+            }
+            
+            return (bool) $this->execute($stmt);
+        } catch (\Exception $e) {
+            error_log("Error deleting from {$table}: " . $e->getMessage());
+            return false;
+        }
+    }
 }

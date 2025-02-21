@@ -20,4 +20,7 @@ interface DatabaseDriverInterface
     public function executeFetchAll(string $table, string $primaryKey, mixed $id): array;
     public function executeInsert(string $table, array $fields, array $attributes, array $bindings): bool;
     public function executeWhereFirst(string $table, array $conditions): ?array;
+    public function executeCreate(string $table, string $primaryKey, array $attributes): ?array;
+    public function executeDeleteWhere(string $table, array $conditions): bool;
+
 }
