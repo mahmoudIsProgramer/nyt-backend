@@ -38,3 +38,7 @@ git clone https://github.com/mahmoudIsProgramer/nyt-backend.git
    php -S localhost:8000 -t public
    ```
 
+6. Log Files Path:
+     logs folder 
+   
+
