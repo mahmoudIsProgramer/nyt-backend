@@ -15,7 +15,7 @@ class Config {
         $this->config = [
             'nyt_api_key' => $_ENV['NYT_API_KEY'],
             'jwt_secret' => $_ENV['JWT_SECRET'],
-            'db_path' => __DIR__ . '/../../' . $_ENV['DB_PATH'],
+            // 'db_path' => __DIR__ . '/../../' . $_ENV['DB_PATH'],
         ];
     }
 

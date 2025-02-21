@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'nyt/article-explorer',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'fd5937cce329d0cdd3725ef08e067d210ebf5143',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -56,9 +56,9 @@
             'dev_requirement' => false,
         ),
         'nyt/article-explorer' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'fd5937cce329d0cdd3725ef08e067d210ebf5143',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
