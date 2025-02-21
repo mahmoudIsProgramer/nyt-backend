@@ -24,7 +24,7 @@ class FavoriteService
     public function toggleFavorite(int $userId, string $articleId): array
     {
         try {
-            return $this->checkIfFavorited($userId, $articleId)
+            return $this->checkIfFavored($userId, $articleId)
                 ? $this->handleUnfavorite($userId, $articleId)
                 : $this->handleFavorite($userId, $articleId);
         } catch (\Exception $e) {
@@ -72,6 +72,8 @@ class FavoriteService
         $this->addFavorite($userId, $articleId);
         return [
             'status' => true,
+            'article_id' => $articleId,
+            'user_id' => $userId,
             'message' => 'Article added to favorites'
         ];
     }
@@ -84,6 +86,8 @@ class FavoriteService
         $this->removeFavorite($userId, $articleId);
         return [
             'status' => false,
+            'article_id' => $articleId,
+            'user_id' => $userId,
             'message' => 'Article removed from favorites'
         ];
     }
@@ -91,7 +95,7 @@ class FavoriteService
     /**
      * Check if article is favorited by user
      */
-    private function checkIfFavorited(int $userId, string $articleId): bool
+    private function checkIfFavored(int $userId, string $articleId): bool
     {
         return $this->favorite->isFavored($userId, $articleId);
     }

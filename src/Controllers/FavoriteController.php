@@ -28,15 +28,16 @@ class FavoriteController extends BaseController
             $request = new ToggleFavoriteRequest();
             $validated = $request->all();
             // Helper::dd($validated);
-            
+            $userId = $_REQUEST['user_id'] ?? null;
             $result = $this->favoriteService->toggleFavorite(
-                (int) $validated['user_id'],
+                (int) $userId,
                 $validated['article_id']
             );
             // Helper::dd($result);
             $this->success([
-                'article_id' => $validated['article_id'],
-                'is_favorited' => $result['status']
+                'article_id' => $result['article_id'],
+                'user_id' => $result['user_id'],
+                'is_favored' => $result['status'],
             ], $result['message']);
             
             // Helper::dd($_REQUEST);

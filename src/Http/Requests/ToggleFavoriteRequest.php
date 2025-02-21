@@ -11,7 +11,7 @@ class ToggleFavoriteRequest extends FormRequest
     {
         return [
             'article_id' => ['required'],
-            'user_id' => ['required','exists:users,id'],
+            // 'user_id' => ['required','exists:users,id'],
         ];
     }
 
