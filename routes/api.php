@@ -3,6 +3,7 @@
 use App\Controllers\ArticlesController;
 use App\Controllers\FavoriteController;
 use App\Controllers\AuthController;
+use App\Controllers\LogController;
 use App\Core\App;
 use App\Middleware\JWTAuthMiddleware;
 use App\Middleware\LoggerMiddleware;
@@ -16,6 +17,7 @@ $router = App::getInstance()->router;
 $articlesController = new ArticlesController();
 $favoriteController = new FavoriteController();
 $authController = new AuthController();
+$logController = new LogController();
 
 // Public Auth Routes (no authentication required)
 $router->post('/auth/register', function() use ($authController) {
@@ -52,3 +54,7 @@ $router->post('/articles/favorites/toggle', function() use ($favoriteController)
 $router->get('/articles/favorites', function() use ($favoriteController) {
     $favoriteController->getFavorites();
 }, [JWTAuthMiddleware::class]);
+
+$router->post('/logs/web', function() use ($logController) {
+    $logController->store();
+});

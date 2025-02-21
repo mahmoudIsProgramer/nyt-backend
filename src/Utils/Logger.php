@@ -21,51 +21,46 @@ class Logger
         }
     }
 
-    public function logRequest(array $request): void
-    {
-        $message = sprintf(
-            "\n=== REQUEST ===\nTimestamp: %s\nMethod: %s\nURL: %s\nHeaders: %s\nBody: %s\n",
-            date('Y-m-d H:i:s'),
-            $request['method'] ?? 'UNKNOWN',
-            $request['url'] ?? 'UNKNOWN',
-            json_encode($request['headers'] ?? [], JSON_PRETTY_PRINT),
-            json_encode($request['body'] ?? [], JSON_PRETTY_PRINT)
+    public function log(
+        string $message, 
+        string $level = 'INFO',
+        array $context = [],
+        ?string $filename = null
+    ): void {
+        $logFile = $filename ?? $this->defaultLogFile;
+        $timestamp = date('Y-m-d H:i:s');
+        
+        $formattedMessage = sprintf(
+            "[%s] %s: %s\nContext: %s\n%s",
+            $timestamp,
+            strtoupper($level),
+            $message,
+            json_encode($context, JSON_PRETTY_PRINT),
+            str_repeat('-', 80) . "\n"
         );
 
-        $this->log($message, 'api.log');
+        file_put_contents(
+            "{$this->logPath}/{$logFile}",
+            $formattedMessage,
+            FILE_APPEND
+        );
+    }
+
+    public function logRequest(array $request): void
+    {
+        $this->log(
+            message: 'API Request',
+            level: 'INFO',
+            context: $request
+        );
     }
 
     public function logResponse(array $response): void
     {
-        $responseBody = $response['body'] ?? [];
-        
-        // Handle both string and array responses
-        if (is_string($responseBody)) {
-            $decodedBody = json_decode($responseBody, true) ?? $responseBody;
-        } else {
-            $decodedBody = $responseBody;
-        }
-
-        $message = sprintf(
-            "=== RESPONSE ===\nTimestamp: %s\nStatus: %d\nHeaders: %s\nBody: %s\n=== END ===\n",
-            date('Y-m-d H:i:s'),
-            $response['status'] ?? 0,
-            json_encode($response['headers'] ?? [], JSON_PRETTY_PRINT),
-            json_encode($decodedBody, JSON_PRETTY_PRINT)
+        $this->log(
+            message: 'API Response',
+            level: 'INFO',
+            context: $response
         );
-
-        $this->log($message, 'api.log');
-    }
-
-    private function log(string $message, string $filename): void
-    {
-        $logPath = "{$this->logPath}/{$filename}";
-        
-        // Ensure message ends with newline
-        if (substr($message, -1) !== "\n") {
-            $message .= "\n";
-        }
-
-        file_put_contents($logPath, $message, FILE_APPEND);
     }
 }

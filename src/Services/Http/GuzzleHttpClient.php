@@ -6,6 +6,7 @@ use App\Services\Http\Config\HttpConfig;
 use App\Services\Http\Contracts\HttpClientInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\GuzzleException;
 use App\Utils\Logger;
 
 class GuzzleHttpClient implements HttpClientInterface {
@@ -49,21 +50,74 @@ class GuzzleHttpClient implements HttpClientInterface {
             ]);
 
             return $responseData;
+
         } catch (RequestException $e) {
-            // Log error
+            // Log error with context
             $this->logger->log(
-                "API Error: " . $e->getMessage(),
-                'ERROR',
-                'api_errors.log'
+                message: "API Error: " . $e->getMessage(),
+                level: 'ERROR',
+                context: [
+                    'method' => $method,
+                    'url' => $endpoint,
+                    'options' => $options,
+                    'response' => $e->hasResponse() ? json_decode($e->getResponse()->getBody(), true) : null
+                ]
             );
+
+            // Return error response if available, otherwise return error array
             if ($e->hasResponse()) {
-                $error = json_decode($e->getResponse()->getBody(), true);
-                throw new \RuntimeException(
-                    $error['fault']['faultstring'] ?? 'API request failed',
-                    $e->getCode() ?: 500
-                );
+                return [
+                    'error' => true,
+                    'status' => $e->getResponse()->getStatusCode(),
+                    'message' => json_decode($e->getResponse()->getBody(), true)['message'] ?? $e->getMessage(),
+                    'data' => json_decode($e->getResponse()->getBody(), true)
+                ];
             }
-            throw new \RuntimeException('Failed to connect to API', 503);
+
+            return [
+                'error' => true,
+                'status' => 500,
+                'message' => $e->getMessage(),
+                'data' => null
+            ];
+
+        } catch (GuzzleException $e) {
+            // Log other Guzzle errors
+            $this->logger->log(
+                message: "Guzzle Error: " . $e->getMessage(),
+                level: 'ERROR',
+                context: [
+                    'method' => $method,
+                    'url' => $endpoint,
+                    'options' => $options
+                ]
+            );
+
+            return [
+                'error' => true,
+                'status' => 500,
+                'message' => 'Network or configuration error',
+                'data' => null
+            ];
+
+        } catch (\Exception $e) {
+            // Log unexpected errors
+            $this->logger->log(
+                message: "Unexpected Error: " . $e->getMessage(),
+                level: 'ERROR',
+                context: [
+                    'method' => $method,
+                    'url' => $endpoint,
+                    'options' => $options
+                ]
+            );
+
+            return [
+                'error' => true,
+                'status' => 500,
+                'message' => 'An unexpected error occurred',
+                'data' => null
+            ];
         }
     }
 
