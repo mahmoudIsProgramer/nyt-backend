@@ -33,7 +33,7 @@ try {
     
     $response = [
         'status' => 'error',
-        'message' => $isProduction ? 'Internal Server Error' : $e->getMessage(),
+        'message' =>  $e->getMessage(),
         'code' => 500
     ];
     // Helper::dd('here');

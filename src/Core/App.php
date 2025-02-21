@@ -56,14 +56,14 @@ class App
             return false;
         }
 
-        $this->sendJsonError('Internal Server Error');
+        $this->sendJsonError($errstr);
         return true;
     }
 
     public function handleException(\Throwable $e): void
     {
         $isProduction = getenv('APP_ENV') === 'production';
-        $message = $isProduction ? 'Internal Server Error' : $e->getMessage();
+        $message =  $e->getMessage();
         
         $this->sendJsonError($message);
     }
