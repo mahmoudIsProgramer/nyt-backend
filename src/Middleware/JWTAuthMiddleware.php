@@ -5,9 +5,12 @@ namespace App\Middleware;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use App\Utils\Helper;
+use App\Traits\ResponseTrait;
 
 class JWTAuthMiddleware implements MiddlewareInterface
 {
+    use ResponseTrait;
+
     private string $jwtSecret;
 
     public function __construct()
@@ -21,8 +24,7 @@ class JWTAuthMiddleware implements MiddlewareInterface
         $token = $this->extractToken($headers);
 
         if (!$token) {
-            http_response_code(401);
-            echo json_encode(['error' => 'No token provided']);
+            $this->unauthorized('No token provided');
             return false;
         }
 
@@ -31,8 +33,7 @@ class JWTAuthMiddleware implements MiddlewareInterface
             $_REQUEST['user_id'] = $decoded->sub;
             return true;
         } catch (\Exception $e) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Invalid token']);
+            $this->unauthorized('Invalid token');
             return false;
         }
     }
