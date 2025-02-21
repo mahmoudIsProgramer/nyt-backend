@@ -6,13 +6,16 @@ use App\Services\Http\Config\HttpConfig;
 use App\Services\Http\Contracts\HttpClientInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use App\Utils\Logger;
 
 class GuzzleHttpClient implements HttpClientInterface {
     private Client $client;
     private HttpConfig $config;
+    private Logger $logger;
 
     public function __construct(HttpConfig $config) {
         $this->config = $config;
+        $this->logger = new Logger();
         $this->initializeClient();
     }
 
@@ -26,9 +29,33 @@ class GuzzleHttpClient implements HttpClientInterface {
 
     private function request(string $method, string $endpoint, array $options = []): array {
         try {
+            // Log request
+            $this->logger->logRequest([
+                'method' => $method,
+                'url' => $this->config->getBaseUrl() . $endpoint,
+                'headers' => $options['headers'] ?? [],
+                'body' => $options['json'] ?? [],
+                'query' => $options['query'] ?? []
+            ]);
+
             $response = $this->client->request($method, $endpoint, $options);
-            return json_decode($response->getBody(), true);
+            $responseData = json_decode($response->getBody(), true);
+
+            // Log response
+            $this->logger->logResponse([
+                'status' => $response->getStatusCode(),
+                'headers' => $response->getHeaders(),
+                'body' => $responseData
+            ]);
+
+            return $responseData;
         } catch (RequestException $e) {
+            // Log error
+            $this->logger->log(
+                "API Error: " . $e->getMessage(),
+                'ERROR',
+                'api_errors.log'
+            );
             if ($e->hasResponse()) {
                 $error = json_decode($e->getResponse()->getBody(), true);
                 throw new \RuntimeException(

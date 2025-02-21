@@ -5,6 +5,7 @@ use App\Controllers\FavoriteController;
 use App\Controllers\AuthController;
 use App\Core\App;
 use App\Middleware\JWTAuthMiddleware;
+use App\Middleware\LoggerMiddleware;
 
 /**
  * @var \App\Core\Router $router
@@ -19,11 +20,11 @@ $authController = new AuthController();
 // Public Auth Routes (no authentication required)
 $router->post('/auth/register', function() use ($authController) {
     $authController->register();
-});
+}, [LoggerMiddleware::class]);
 
 $router->post('/auth/login', function() use ($authController) {
     $authController->login();
-});
+}, [LoggerMiddleware::class]);
 
 $router->post('/auth/logout', function() use ($authController) {
     $authController->logout();
