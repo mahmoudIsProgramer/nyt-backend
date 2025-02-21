@@ -12,4 +12,8 @@ interface DatabaseDriverInterface
     public function fetchAll(mixed $result): array;
     public function getConnection(): mixed;
     public function lastInsertRowID(): int;  // Changed to match SQLite3's method name
+    public function executeQuery(string $sql, array $params, int $paramType): ?array;
+    public function executeDelete(string $table, string $primaryKey, mixed $id): bool;
+    public function getFieldType(string $field): int;
+    
 }

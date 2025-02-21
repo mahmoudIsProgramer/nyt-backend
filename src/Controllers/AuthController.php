@@ -3,9 +3,10 @@
 namespace App\Controllers;
 
 use App\DTOs\UserDTO;
+use App\Utils\Helper;
+use App\Services\AuthService;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
-use App\Services\AuthService;
 
 class AuthController extends BaseController
 {
@@ -21,6 +22,7 @@ class AuthController extends BaseController
         try {
             $request = new RegisterRequest();
             $userDTO = UserDTO::fromRequest($request->all());
+            // Helper::dd($userDTO);
             
             $result = $this->authService->register($userDTO);
             

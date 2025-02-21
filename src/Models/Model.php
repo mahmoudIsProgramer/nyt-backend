@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Core\Database;
 use App\Core\Interfaces\DatabaseDriverInterface;
+use App\Utils\Helper;
 use PDO;
 
 abstract class Model
@@ -53,9 +54,47 @@ abstract class Model
      */
     public static function create(array $attributes): ?static
     {
-        $instance = new static();
-        $instance->fill($attributes);
-        return $instance->save() ? $instance : null;
+        try {
+            $instance = new static();
+            $instance->fill($attributes);
+            
+            if (!$instance->save()) {
+                error_log("Failed to save model");
+                return null;
+            }
+
+            // Log the inserted ID for debugging
+            $insertedId = $instance->attributes[$instance->primaryKey] ?? null;
+            error_log("Inserted ID: " . $insertedId);
+            
+            if (!$insertedId) {
+                error_log("No ID returned after save");
+                return null;
+            }
+            
+            // Get the newly created record
+            $sql = "SELECT * FROM {$instance->table} WHERE {$instance->primaryKey} = :id LIMIT 1";
+            $stmt = $instance->db->prepare($sql);
+            $instance->db->bindValue($stmt, ':id', $insertedId, PDO::PARAM_INT);
+            
+            $result = $instance->db->execute($stmt);
+            $data = $instance->db->fetchArray($result);
+            
+            if (!$data) {
+                error_log("Failed to fetch created record");
+                return null;
+            }
+            
+            // Create new instance with fetched data
+            $newInstance = new static();
+            $newInstance->attributes = $data;
+            
+            return $newInstance;
+            
+        } catch (\Exception $e) {
+            error_log("Create error: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**
@@ -64,6 +103,7 @@ abstract class Model
     protected function save(): bool
     {
         if (empty($this->attributes)) {
+            error_log("No attributes to save");
             return false;
         }
 
@@ -74,26 +114,29 @@ abstract class Model
             $sql = "INSERT INTO {$this->table} (" . implode(', ', $fields) . 
                    ") VALUES (" . implode(', ', $placeholders) . ")";
             
+            error_log("Executing SQL: " . $sql);
             $stmt = $this->db->prepare($sql);
             
             foreach ($this->attributes as $field => $value) {
-                $this->db->bindValue(
-                    $stmt,
-                    ":$field",
-                    $value,
-                    $this->getFieldType($field)
-                );
+                $type = $this->getFieldType($field);
+                $this->db->bindValue($stmt, ":$field", $value, $type);
+                error_log("Binding $field: $value (type: $type)");
             }
             
             $result = $this->db->execute($stmt);
-            if ($result) {
-                $this->attributes[$this->primaryKey] = $this->db->lastInsertRowID();
-                return true;
+            
+            if (!$result) {
+                error_log("Execute failed");
+                return false;
             }
             
-            return false;
+            $this->attributes[$this->primaryKey] = $this->db->lastInsertRowID();
+            error_log("Last insert ID: " . $this->attributes[$this->primaryKey]);
+            
+            return true;
+            
         } catch (\Exception $e) {
-            error_log("Error saving model: " . $e->getMessage());
+            error_log("Save error: " . $e->getMessage());
             return false;
         }
     }
@@ -116,7 +159,7 @@ abstract class Model
     protected function getFieldType(string $field): int
     {
         return match($field) {
-            'user_id', 'id' => PDO::PARAM_INT,
+            'id', 'user_id' => PDO::PARAM_INT,
             default => PDO::PARAM_STR
         };
     }
@@ -182,19 +225,7 @@ abstract class Model
      */
     protected function executeQuery(string $sql, array $params, int $paramType): ?array
     {
-        try {
-            $stmt = $this->db->prepare($sql);
-            
-            foreach ($params as $key => $value) {
-                $this->db->bindValue($stmt, $key, $value, $paramType);
-            }
-            
-            $result = $this->db->execute($stmt);
-            return $this->db->fetchArray($result);
-        } catch (\Exception $e) {
-            $this->logError('executing query', $e);
-            return null;
-        }
+        return $this->db->executeQuery($sql, $params, $paramType);
     }
 
     /**
@@ -224,22 +255,11 @@ abstract class Model
      */
     public function delete(): bool
     {
-        try {
-            $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
-            $stmt = $this->db->prepare($sql);
-            
-            $this->db->bindValue(
-                $stmt, 
-                ':id', 
-                $this->attributes[$this->primaryKey], 
-                PDO::PARAM_INT
-            );
-            
-            return (bool) $this->db->execute($stmt);
-        } catch (\Exception $e) {
-            error_log("Error deleting from {$this->table}: " . $e->getMessage());
-            return false;
-        }
+        return $this->db->executeDelete(
+            $this->table,
+            $this->primaryKey,
+            $this->attributes[$this->primaryKey]
+        );
     }
 
     /**
@@ -283,15 +303,28 @@ abstract class Model
 
     public function first(): ?array
     {
-        // Implement database query logic here
-        // This is a basic implementation
-        $sql = "SELECT * FROM {$this->table}";
-        if (!empty($this->query['where'])) {
-            $where = $this->query['where'][0];
-            $sql .= " WHERE {$where[0]} {$where[1]} ?";
-            // Execute query with prepared statement using $where[2] as value
+        try {
+            $sql = "SELECT * FROM {$this->table}";
+            $params = [];
+            
+            if (!empty($this->query['where'])) {
+                $where = $this->query['where'][0];
+                $sql .= " WHERE {$where[0]} {$where[1]} :value LIMIT 1";
+                $params[':value'] = $where[2];
+            }
+            
+            return $this->executeQuery(
+                $sql,
+                $params,
+                $this->getFieldType($this->query['where'][0][0] ?? 'default')
+            );
+            
+        } catch (\Exception $e) {
+            error_log("Error in first(): " . $e->getMessage());
+            return null;
+        } finally {
+            // Reset query builder
+            $this->query = [];
         }
-        // Return first result or null
-        return null;
     }
 }

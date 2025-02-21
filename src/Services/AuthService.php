@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\DTOs\UserDTO;
+use App\Utils\Helper;
 use Firebase\JWT\JWT;
 
 class AuthService
@@ -28,23 +29,27 @@ class AuthService
      */
     public function register(UserDTO $userDTO): array
     {
-        $userId = $this->userModel->create([
+
+        $user = $this->userModel->create([
             'name' => $userDTO->name,
             'email' => $userDTO->email,
             'password' => $userDTO->password,
             'created_at' => date('Y-m-d H:i:s')
         ]);
-        if (!$userId) {
+        // Helper::dd($user->toArray());
+        if (!$user) {
             throw new \RuntimeException('Failed to create user');
         }
 
+        // Convert user model to array and remove sensitive data
+        $userData = $user->toArray();
+        // Helper::dd($userData);
+
+        unset($userData['password']);
+
         return [
-            'user' => [
-                'id' => $userId,
-                'name' => $userDTO->name,
-                'email' => $userDTO->email
-            ],
-            // 'token' => $this->generateToken($userId)
+            'user' => $userData,
+            'token' => $this->generateToken($user->id)
         ];
     }
 
@@ -59,6 +64,7 @@ class AuthService
     public function authenticate(string $email, string $password): array
     {
         $user = $this->userModel->findByEmail($email);
+        // Helper::dd($user); 
         if (!$user || !password_verify($password, $user['password'])) {
             throw new \InvalidArgumentException('Invalid credentials');
         }

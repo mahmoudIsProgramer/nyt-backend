@@ -19,6 +19,4 @@ class User extends Model
     {
         return $this->where('email', '=', $email)->first();
     }
-    
-    // ...existing code...
 }

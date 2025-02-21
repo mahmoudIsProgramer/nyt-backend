@@ -55,4 +55,43 @@ class SQLiteDriver implements DatabaseDriverInterface
     {
         return $this->connection->lastInsertRowID();
     }
+
+    public function executeQuery(string $sql, array $params, int $paramType): ?array
+    {
+        try {
+            $stmt = $this->prepare($sql);
+            
+            foreach ($params as $key => $value) {
+                $this->bindValue($stmt, $key, $value, $paramType);
+            }
+            
+            $result = $this->execute($stmt);
+            return $this->fetchArray($result);
+        } catch (\Exception $e) {
+            error_log("Query execution error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function executeDelete(string $table, string $primaryKey, mixed $id): bool
+    {
+        try {
+            $sql = "DELETE FROM {$table} WHERE {$primaryKey} = :id";
+            $stmt = $this->prepare($sql);
+            $this->bindValue($stmt, ':id', $id, \PDO::PARAM_INT);
+            
+            return (bool) $this->execute($stmt);
+        } catch (\Exception $e) {
+            error_log("Delete error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getFieldType(string $field): int
+    {
+        return match($field) {
+            'user_id', 'id' => \PDO::PARAM_INT,
+            default => \PDO::PARAM_STR
+        };
+    }
 }
