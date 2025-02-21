@@ -24,25 +24,28 @@ class FavoriteController extends BaseController
      */
     public function toggleFavorite(): void 
     {
-        // Helper::dd($_REQUEST);
         try {
             $request = new ToggleFavoriteRequest();
             $validated = $request->all();
+            // Helper::dd($validated);
             
             $result = $this->favoriteService->toggleFavorite(
-                $validated['user_id'],
+                (int) $validated['user_id'],
                 $validated['article_id']
             );
-            
+            // Helper::dd($result);
             $this->success([
                 'article_id' => $validated['article_id'],
-                'user_id' => $validated['user_id'],
                 'is_favorited' => $result['status']
             ], $result['message']);
-
+            
+            // Helper::dd($_REQUEST);
         } catch (\InvalidArgumentException $e) {
-            $this->validationError($e->getMessage());
-        } catch (\Exception $e) {
+            Helper::dd($e->getMessage());
+
+            $this->unauthorized($e->getMessage());
+        } 
+        catch (\Exception $e) {
             $this->error('Error updating favorites', 500);
         }
     }

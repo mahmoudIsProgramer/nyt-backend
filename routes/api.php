@@ -3,8 +3,8 @@
 use App\Controllers\ArticlesController;
 use App\Controllers\FavoriteController;
 use App\Controllers\AuthController;
-use App\Middleware\AuthMiddleware;
 use App\Core\App;
+use App\Utils\Helper;
 
 /**
  * @var \App\Core\Router $router
@@ -37,12 +37,12 @@ $router->get('/articles/{url}', function(string $articleUrl) use ($articlesContr
 // Protected Routes (require authentication)
 $router->get('/user', function() use ($authController) { 
     $authController->getUser();
-})->middleware([AuthMiddleware::class, 'authenticate']);
+});
 
 $router->post('/articles/favorites/toggle', function() use ($favoriteController) {
     $favoriteController->toggleFavorite();
-})->middleware([AuthMiddleware::class, 'authenticate']);
+});
 
 $router->get('/articles/favorites', function() use ($favoriteController) {
     $favoriteController->getFavorites();
-})->middleware([AuthMiddleware::class, 'authenticate']);
+});

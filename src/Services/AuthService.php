@@ -76,7 +76,7 @@ class AuthService
         $payload = [
             'sub' => $userId,
             'iat' => time(),
-            'exp' => time() + $this->jwtExpiry
+            'exp' => time() + (60 * 60 * 24) // 24 hours
         ];
 
         return JWT::encode($payload, $this->jwtSecret, 'HS256');
