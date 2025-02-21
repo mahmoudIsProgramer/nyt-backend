@@ -1,6 +1,8 @@
 # NYT Article Explorer
 
 A PHP application that allows users to search, view, and save favorite articles from the New York Times API.
+## Api Requests
+    Postman Collection Included In Project Files 
 
 ## Requirements
 

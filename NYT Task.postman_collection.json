@@ -1,0 +1,411 @@
+{
+	"info": {
+		"_postman_id": "ab615d97-6d2e-4dee-a225-3a35a4fd4281",
+		"name": "NYT Task",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "5338765",
+		"_collection_link": "https://cloudy-water-3419.postman.co/workspace/My-Workspace~2cc5a28e-114e-44b1-8010-96eb15241cdf/collection/5338765-ab615d97-6d2e-4dee-a225-3a35a4fd4281?action=share&source=collection_link&creator=5338765"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Store access token in variable\", function () {",
+									"    // Parse the response body to extract the access token",
+									"    var jsonData = pm.response.json();",
+									"    console.log(jsonData.data.access_token);",
+									"    pm.collectionVariables.set(\"accessToken\",\"Bearer \"+ jsonData.data.access_token);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"{{$randomEmail}}\",\n    \"password\": \"123456\"\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Store access token in variable\", function () {",
+									"    // Parse the response body to extract the access token",
+									"    var jsonData = pm.response.json();",
+									"    console.log(jsonData.data.access_token);",
+									"    pm.collectionVariables.set(\"accessToken\",\"Bearer \"+ jsonData.data.access_token);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \n    \"email\": \"m122f2e3f@app.com\",\n    \"password\": \"123456\"\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Store access token in variable\", function () {",
+									"    // Parse the response body to extract the access token",
+									"    var jsonData = pm.response.json();",
+									"    console.log(jsonData.data.access_token);",
+									"    pm.collectionVariables.set(\"accessToken\",\"Bearer \"+ jsonData.data.access_token);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "search articles",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					},
+					{
+						"key": "begin_date",
+						"value": "2025-02-14",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/articles/search?q=technology",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"articles",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "technology"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "main api",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "api-key",
+						"value": "UnZmH085tbfaM3gHGmUIEu72pGEZcAvp",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "User-Agent",
+						"value": "NYT Article Explorer/1.0",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://api.nytimes.com/svc/search/v2/articlesearch.json?api-key=UnZmH085tbfaM3gHGmUIEu72pGEZcAvp",
+					"protocol": "https",
+					"host": [
+						"api",
+						"nytimes",
+						"com"
+					],
+					"path": [
+						"svc",
+						"search",
+						"v2",
+						"articlesearch.json"
+					],
+					"query": [
+						{
+							"key": "api-key",
+							"value": "UnZmH085tbfaM3gHGmUIEu72pGEZcAvp"
+						},
+						{
+							"key": "begin_date",
+							"value": "2025-02-05\n",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "toggle favoirte",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "api-key",
+						"value": "UnZmH085tbfaM3gHGmUIEu72pGEZcAvp",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "User-Agent",
+						"value": "NYT Article Explorer/1.0",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"article_id\":2,\n    \"web_url\":\"sdf\",\n    \"headline\":\"sdfd\",\n    \"snippet\":\"sdfd\",\n    \"pub_date\":\"sdfd\",\n    \"source\":\"sdfd\",\n    \"image_url\":\"sdfd\",\n    \"author\":\"sdfd\"\n\n    \n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/articles/favorites/toggle",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"articles",
+						"favorites",
+						"toggle"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "list favorites",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/articles/favorites",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"articles",
+						"favorites"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "1",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get user profile",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/get-user-profile",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"get-user-profile"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "1",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "accessToken",
+			"value": ""
+		}
+	]
+}
