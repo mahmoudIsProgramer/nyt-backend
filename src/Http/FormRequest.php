@@ -66,6 +66,16 @@ abstract class FormRequest
     {
         $value = $this->get($field);
         
+        // If the rule is 'required', check it first
+        if ($rule === 'required') {
+            return ValidationRules::required($value);
+        }
+        
+        // Skip other validations if value is null/empty and field is not required
+        if ($value === null || $value === '') {
+            return !in_array('required', explode('|', $this->rules()[$field]));
+        }
+        
         // Handle rules with parameters
         if (strpos($rule, ':') !== false) {
             [$ruleName, $parameter] = explode(':', $rule, 2);
@@ -79,7 +89,7 @@ abstract class FormRequest
                 return ValidationRules::required($value);
 
             case 'email':
-                return ValidationRules::email($value);
+                return ValidationRules::email((string)$value);
 
             case 'min':
                 return ValidationRules::min($value, (int)$parameter);
