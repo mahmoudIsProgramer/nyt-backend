@@ -13,6 +13,7 @@ abstract class Model
     protected array $fillable = [];
     protected array $attributes = [];
     protected DatabaseDriverInterface $db;
+    protected $query = [];
 
     public function __construct(array $attributes = [], DatabaseDriverInterface $db = null)
     {
@@ -92,7 +93,7 @@ abstract class Model
             
             return false;
         } catch (\Exception $e) {
-            error_log($e->getMessage());
+            error_log("Error saving model: " . $e->getMessage());
             return false;
         }
     }
@@ -272,5 +273,25 @@ abstract class Model
             error_log("Error deleting from {$this->table}: " . $e->getMessage());
             return false;
         }
+    }
+
+    public function where(string $column, string $operator, $value): self
+    {
+        $this->query['where'][] = [$column, $operator, $value];
+        return $this;
+    }
+
+    public function first(): ?array
+    {
+        // Implement database query logic here
+        // This is a basic implementation
+        $sql = "SELECT * FROM {$this->table}";
+        if (!empty($this->query['where'])) {
+            $where = $this->query['where'][0];
+            $sql .= " WHERE {$where[0]} {$where[1]} ?";
+            // Execute query with prepared statement using $where[2] as value
+        }
+        // Return first result or null
+        return null;
     }
 }

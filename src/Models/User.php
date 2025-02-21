@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Core\Database;
-use SQLite3;
 
 class User extends Model
 {
@@ -15,12 +13,12 @@ class User extends Model
         'password',
         'created_at'
     ];
+    
 
     public function findByEmail(string $email): ?array
     {
-        return $this->findBy('email', $email);
+        return $this->where('email', '=', $email)->first();
     }
-
-    // Remove any create() method override if it exists
-    // The parent static create() method will be used
+    
+    // ...existing code...
 }

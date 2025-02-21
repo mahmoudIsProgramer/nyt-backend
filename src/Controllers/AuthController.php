@@ -31,7 +31,7 @@ class AuthController extends BaseController
         } catch (\InvalidArgumentException $e) {
             $this->error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            $this->error('Server error', 500);
+            $this->error($e->getMessage(), 500);
         }
     }
 
