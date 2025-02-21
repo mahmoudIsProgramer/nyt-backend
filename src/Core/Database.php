@@ -2,56 +2,44 @@
 
 namespace App\Core;
 
-use SQLite3;
 use Exception;
+use App\Core\Database\DatabaseFactory;
+use App\Core\Interfaces\DatabaseDriverInterface;
 
-class Database {
+class Database
+{
     private static ?Database $instance = null;
-    private SQLite3 $connection;
+    private DatabaseDriverInterface $driver;
 
-    private function __construct() {
-        try {
-            $dbPath = dirname(__DIR__, 2) . '/database/database.sqlite';
-            $this->connection = new SQLite3($dbPath);
-            
-            // Enable foreign key support
-            $this->connection->exec('PRAGMA foreign_keys = ON');
-            
-        } catch (Exception $e) {
-            throw new Exception("Connection failed: " . $e->getMessage());
-        }
+    private function __construct()
+    {
+        $config = $this->loadConfig();
+        $this->driver = DatabaseFactory::create($config['driver']);
+        $this->driver->connect($config);
     }
 
-    public static function getInstance(): Database {
+    public static function getInstance(): self
+    {
         if (self::$instance === null) {
-            self::$instance = new Database();
+            self::$instance = new self();
         }
         return self::$instance;
     }
 
-    public function getConnection(): SQLite3 {
-        return $this->connection;
+    private function loadConfig(): array
+    {
+        return [
+            'driver' => $_ENV['DB_DRIVER'] ?? 'sqlite',
+            'host' => $_ENV['DB_HOST'] ?? 'localhost',
+            'database' => $_ENV['DB_DATABASE'] ?? 'database.sqlite',
+            'username' => $_ENV['DB_USERNAME'] ?? '',
+            'password' => $_ENV['DB_PASSWORD'] ?? '',
+        ];
     }
 
-    // Helper method to convert SQLite3Result to array
-    public function fetchArray($result): ?array {
-        if (!$result) {
-            return null;
-        }
-        $row = $result->fetchArray(SQLITE3_ASSOC);
-        return $row !== false ? $row : null;
-    }
-
-    public function prepare(string $sql): \SQLite3Stmt {
-        return $this->connection->prepare($sql);
-    }
-
-    public function exec(string $sql): bool {
-        return $this->connection->exec($sql);
-    }
-
-    public function lastInsertRowID(): int {
-        return $this->connection->lastInsertRowID();
+    public function getDriver(): DatabaseDriverInterface
+    {
+        return $this->driver;
     }
 
     // Prevent cloning of the instance

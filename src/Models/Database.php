@@ -33,7 +33,7 @@ class Database {
         return $stmt->execute();
     }
 
-    public function lastInsertRowID(): int {
+    public function lastInsertId(): int {
         return $this->db->lastInsertRowID();
     }
 

@@ -3,18 +3,18 @@
 namespace App\Models;
 
 use App\Core\Database;
-use SQLite3;
+use PDO;
 
 abstract class Model
 {
     protected string $table;
     protected string $primaryKey = 'id';
     protected array $fillable = [];
-    protected SQLite3 $db;
+    protected $db;
 
     public function __construct()
     {
-        $this->db = Database::getInstance()->getConnection();
+        $this->db = Database::getInstance()->getDriver();
     }
 
     public function findBy(string $field, mixed $value): ?array
@@ -23,10 +23,10 @@ abstract class Model
         
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(':value', $value, SQLITE3_TEXT);
+            $this->db->bindValue($stmt, ':value', $value, PDO::PARAM_STR);
             
-            $result = $stmt->execute();
-            return Database::getInstance()->fetchArray($result);
+            $result = $this->db->execute($stmt);
+            return $this->db->fetchArray($result);
         } catch (\Exception $e) {
             error_log("Error finding record by $field in {$this->table}: " . $e->getMessage());
             return null;
@@ -39,10 +39,10 @@ abstract class Model
         
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(':id', $id, SQLITE3_INTEGER);
+            $this->db->bindValue($stmt, ':id', $id, PDO::PARAM_INT);
             
-            $result = $stmt->execute();
-            return Database::getInstance()->fetchArray($result);
+            $result = $this->db->execute($stmt);
+            return $this->db->fetchArray($result); // Use driver's fetchArray
         } catch (\Exception $e) {
             error_log("Error finding record by id in {$this->table}: " . $e->getMessage());
             return null;
@@ -59,26 +59,18 @@ abstract class Model
         return $this->table;
     }
 
-
     public function fetchAll(): array
     {
         $sql = "SELECT * FROM {$this->table}";
         
         try {
             $stmt = $this->db->prepare($sql);
-            $result = $stmt->execute();
+            $result = $this->db->execute($stmt);
             
-            $records = [];
-            while ($row = Database::getInstance()->fetchArray($result)) {
-                $records[] = $row;
-            }
-            
-            return $records;
+            return $this->db->fetchAll($result); // Use driver's fetchAll
         } catch (\Exception $e) {
             error_log("Error fetching all records from {$this->table}: " . $e->getMessage());
             return [];
         }
     }
-    
-     
 }
