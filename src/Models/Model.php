@@ -58,4 +58,27 @@ abstract class Model
     {
         return $this->table;
     }
+
+
+    public function fetchAll(): array
+    {
+        $sql = "SELECT * FROM {$this->table}";
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute();
+            
+            $records = [];
+            while ($row = Database::getInstance()->fetchArray($result)) {
+                $records[] = $row;
+            }
+            
+            return $records;
+        } catch (\Exception $e) {
+            error_log("Error fetching all records from {$this->table}: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+     
 }
