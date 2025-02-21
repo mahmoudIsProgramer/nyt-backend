@@ -11,6 +11,7 @@ A PHP application that allows users to search, view, and save favorite articles 
 ## Installation
 
 1. Clone the repository
+git clone https://github.com/mahmoudIsProgramer/nyt-backend.git
 2. Install dependencies:
    ```bash
    composer install
@@ -34,13 +35,4 @@ A PHP application that allows users to search, view, and save favorite articles 
    ```bash
    php -S localhost:8000 -t public
    ```
-
-## Features
-
-- User authentication with JWT
-- Search NYT articles with pagination
-- Save favorite articles
-- View and manage favorite articles
-- RESTful API design
- 
 
