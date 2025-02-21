@@ -94,8 +94,9 @@ class AuthService
             }
 
             $userData = $user->toArray();
-            Helper::dd($userData);
             unset($userData['password']); // Remove sensitive data
+            // Helper::dd($userData);
+            // Helper::dd($userData['password']);
             
             $userDTO = UserDTO::fromArray($userData);
             return (new UserResource($userDTO))->toArray();

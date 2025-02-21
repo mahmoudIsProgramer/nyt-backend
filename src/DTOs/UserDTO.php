@@ -5,7 +5,7 @@ namespace App\DTOs;
 class UserDTO
 {
     public function __construct(
-        public readonly int $id,
+        // public readonly int $id,
         public readonly string $name,
         public readonly string $email,
         public readonly string $password,
@@ -16,7 +16,7 @@ class UserDTO
     public static function fromRequest(array $data): self
     {
         return new self(
-            id: $data['id'],
+            // id: $data['id'],
             name: $data['name'],
             email: $data['email'],
             password: password_hash($data['password'], PASSWORD_DEFAULT),
@@ -27,10 +27,10 @@ class UserDTO
     public static function fromArray(array $data): self
     {
         return new self(
-            id: $data['id'],
+            // id: $data['id'],
             name: $data['name'],
             email: $data['email'],
-            password: password_hash($data['password'], PASSWORD_DEFAULT),
+            password: $data['password']??'',
             created_at: $data['created_at'] ?? date('Y-m-d H:i:s')
         );
     }
