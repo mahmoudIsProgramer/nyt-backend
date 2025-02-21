@@ -33,7 +33,7 @@ class Favorite extends Model
         }
     }
 
-    public static function isFavorited(int $userId, string $articleId): bool
+    public static function isFavored(int $userId, string $articleId): bool
     {
         return static::query()
             ->where('user_id', $userId)

@@ -93,14 +93,10 @@ class FavoriteService
      */
     private function checkIfFavorited(int $userId, string $articleId): bool
     {
-        return $this->favorite->isFavorited($userId, $articleId);
+        return $this->favorite->isFavored($userId, $articleId);
     }
 
-    /**
-     * Add article to favorites
-     *
-     * @throws Exception
-     */
+     
     private function addFavorite(int $userId, string $articleId): void
     {
         $result = Favorite::create([
@@ -108,23 +104,12 @@ class FavoriteService
             'article_id' => $articleId,
             'created_at' => date('Y-m-d H:i:s')
         ]);
-        
-        if (!$result) {
-            throw new Exception('Failed to add article to favorites');
-        }
+         
     }
 
-    /**
-     * Remove article from favorites
-     *
-     * @throws Exception
-     */
     private function removeFavorite(int $userId, string $articleId): void
     {
         $result = $this->favorite->unfavorite($userId, $articleId);
         
-        if (!$result) {
-            throw new Exception('Failed to remove article from favorites');
-        }
     }
 }
