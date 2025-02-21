@@ -12,68 +12,47 @@ class Favorite extends Model
         'created_at'
     ];
 
-    /**
-     * Get all favorites for a user
-     */
-    public function getAllByUserId(int $userId): array
+    public static function getAllByUserId(int $userId): array
     {
-        $sql = "SELECT * FROM {$this->table} WHERE user_id = :user_id ORDER BY created_at DESC";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        
-        return $this->fetchAll($stmt->execute());
-    }
-
-    /**
-     * Check if an article is already favorited by user
-     */
-    public function isFavorited(int $userId, string $articleId): bool
-    {
-        return $this->exists('user_id', $userId, [
-            'article_id' => $articleId
-        ]);
-    }
-
-    /**
-     * Remove favorite article
-     */
-    public function unfavorite(int $userId, string $articleId): bool
-    {
-        $sql = "DELETE FROM {$this->table} WHERE user_id = :user_id AND article_id = :article_id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $stmt->bindValue(':article_id', $articleId, SQLITE3_TEXT);
-        
-        return $stmt->execute() !== false;
-    }
-
-    /**
-     * Create new favorite
-     */
-    public function create(array $data): ?int
-    {
-        $data['created_at'] = date('Y-m-d H:i:s');
-        
         try {
-            $sql = "INSERT INTO {$this->table} (" . implode(', ', $this->fillable) . 
-                   ") VALUES (" . implode(', ', array_map(fn($field) => ":$field", $this->fillable)) . ")";
+            $result = static::query()
+                ->where('user_id', $userId)
+                ->orderBy('created_at', 'DESC')
+                ->get();
             
-            $stmt = $this->db->prepare($sql);
+            // Convert Model objects to arrays
+            $favorites = array_map(function($favorite) {
+                return $favorite->toArray();
+            }, $result);
             
-            foreach ($this->fillable as $field) {
-                $type = $field === 'user_id' ? SQLITE3_INTEGER : SQLITE3_TEXT;
-                $stmt->bindValue(":$field", $data[$field], $type);
-            }
-            
-            $result = $stmt->execute();
-            if ($result === false) {
-                throw new \Exception("Failed to create favorite: " . $this->db->lastErrorMsg());
-            }
-            
-            return $this->db->lastInsertRowID();
+            error_log("Favorites query result: " . json_encode($favorites));
+            return $favorites;
         } catch (\Exception $e) {
-            error_log($e->getMessage());
-            throw $e;
+            error_log("Error fetching favorites: " . $e->getMessage());
+            return [];
         }
     }
+
+    public static function isFavorited(int $userId, string $articleId): bool
+    {
+        return static::query()
+            ->where('user_id', $userId)
+            ->where('article_id', $articleId)
+            ->first() !== null;
+    }
+
+    public static function unfavorite(int $userId, string $articleId): bool
+    {
+        try {
+            $model = new static();
+            return $model->deleteWhere([
+                'user_id' => $userId,
+                'article_id' => $articleId
+            ]);
+        } catch (\Exception $e) {
+            error_log($e->getMessage());
+            return false;
+        }
+    }
+ 
 }

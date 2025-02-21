@@ -2,72 +2,90 @@
 
 namespace App\Services;
 
+use Exception;
 use App\Models\Favorite;
-use App\Core\Database;
 use App\DTOs\FavoriteDTO;
+use App\Utils\Helper;
 
 class FavoriteService
 {
     private Favorite $favorite;
 
-    public function __construct()
+    public function __construct(Favorite $favorite = null)
     {
-        $this->favorite = new Favorite();
+        $this->favorite = $favorite ?? new Favorite();
     }
 
     /**
      * Toggle favorite status for an article
      *
-     * @param int $userId
-     * @param string $articleId
-     * @return array{status: bool, message: string}
-     * @throws \Exception If toggling favorite fails
+     * @throws Exception
      */
     public function toggleFavorite(int $userId, string $articleId): array
     {
         try {
-            $isFavorited = $this->checkIfFavorited($userId, $articleId);
-            
-            if ($isFavorited) {
-                $this->removeFavorite($userId, $articleId);
-                return [
-                    'status' => false,
-                    'message' => 'Article removed from favorites'
-                ];
-            }
-
-            $this->addFavorite($userId, $articleId);
-            return [
-                'status' => true,
-                'message' => 'Article added to favorites'
-            ];
+            return $this->checkIfFavorited($userId, $articleId)
+                ? $this->handleUnfavorite($userId, $articleId)
+                : $this->handleFavorite($userId, $articleId);
         } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to toggle favorite: ' . $e->getMessage());
+            throw new Exception('Failed to toggle favorite: ' . $e->getMessage());
         }
     }
 
     /**
      * Get user's favorite articles
      *
-     * @param int $userId
-     * @return array{favorites: array, count: int}
-     * @throws \RuntimeException If fetching favorites fails
+     * @throws Exception
      */
     public function getUserFavorites(int $userId): array
     {
         try {
             $favorites = $this->favorite->getAllByUserId($userId);
+
+            // Helper::dd($favorites);
             
             return [
-                'favorites' => array_map(
-                    fn($favorite) => FavoriteDTO::fromArray($favorite),
-                    $favorites
-                ),
+                'favorites' => $this->mapFavoritesToDTOs($favorites),
                 'count' => count($favorites)
             ];
         } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to get user favorites: ' . $e->getMessage());
+            throw new Exception('Failed to get user favorites: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Map favorites to DTOs
+     */
+    private function mapFavoritesToDTOs(array $favorites): array
+    {
+        return array_map(
+            fn($favorite) => FavoriteDTO::fromArray($favorite),
+            $favorites
+        );
+    }
+
+    /**
+     * Handle favoriting an article
+     */
+    private function handleFavorite(int $userId, string $articleId): array
+    {
+        $this->addFavorite($userId, $articleId);
+        return [
+            'status' => true,
+            'message' => 'Article added to favorites'
+        ];
+    }
+
+    /**
+     * Handle unfavoriting an article
+     */
+    private function handleUnfavorite(int $userId, string $articleId): array
+    {
+        $this->removeFavorite($userId, $articleId);
+        return [
+            'status' => false,
+            'message' => 'Article removed from favorites'
+        ];
     }
 
     /**
@@ -81,32 +99,32 @@ class FavoriteService
     /**
      * Add article to favorites
      *
-     * @throws \RuntimeException If adding favorite fails
+     * @throws Exception
      */
     private function addFavorite(int $userId, string $articleId): void
     {
-        $result = $this->favorite->create([
+        $result = Favorite::create([
             'user_id' => $userId,
             'article_id' => $articleId,
             'created_at' => date('Y-m-d H:i:s')
         ]);
         
         if (!$result) {
-            throw new \RuntimeException('Failed to add article to favorites');
+            throw new Exception('Failed to add article to favorites');
         }
     }
 
     /**
      * Remove article from favorites
      *
-     * @throws \RuntimeException If removing favorite fails
+     * @throws Exception
      */
     private function removeFavorite(int $userId, string $articleId): void
     {
         $result = $this->favorite->unfavorite($userId, $articleId);
         
         if (!$result) {
-            throw new \RuntimeException('Failed to remove article from favorites');
+            throw new Exception('Failed to remove article from favorites');
         }
     }
 }
