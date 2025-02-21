@@ -13,13 +13,7 @@ class RouteServiceProvider {
     }
 
     public function boot(): void {
-        $this->loadWebRoutes();
         $this->loadApiRoutes();
-    }
-
-    private function loadWebRoutes(): void {
-        $router = $this->router;
-        require $this->routesPath . '/web.php';
     }
 
     private function loadApiRoutes(): void {
