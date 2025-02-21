@@ -45,7 +45,7 @@ class AuthService
 
         // Convert user model to array and remove sensitive data
         $userData = $user->toArray();
-        
+
         unset($userData['password']);
         // Helper::dd($userData);
 
@@ -89,7 +89,7 @@ class AuthService
     {
         try {
             $user = $this->userModel->find($userId);
-            
+
             if (!$user) {
                 return null;
             }
@@ -98,10 +98,9 @@ class AuthService
             unset($userData['password']); // Remove sensitive data
             // Helper::dd($userData);
             // Helper::dd($userData['password']);
-            
+
             $userDTO = UserDTO::fromArray($userData);
             return (new UserResource($userDTO))->toArray();
-            
         } catch (\Exception $e) {
             error_log("Error fetching user: " . $e->getMessage());
             return null;
@@ -115,5 +114,30 @@ class AuthService
             secret: $this->jwtSecret,
             expiry: $this->jwtExpiry
         );
+    }
+
+    /**
+     * Logout user
+     *
+     * @param int $userId
+     * @return bool
+     */
+    public function logout(int $userId): bool
+    {
+        try {
+            $token = $_REQUEST['token'] ?? null;
+            
+            if (!$token) {
+                return false;
+            }
+    
+            // Force token expiration
+            JWTHelper::expireToken($token, $this->jwtSecret);
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log("Error during logout: " . $e->getMessage());
+            return false;
+        }
     }
 }

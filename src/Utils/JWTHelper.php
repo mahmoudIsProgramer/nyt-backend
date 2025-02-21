@@ -19,7 +19,25 @@ class JWTHelper
         $payload = [
             'sub' => $userId,
             'iat' => time(),
-            'exp' => time() + $expiry
+            'exp' => time() + $expiry,
+            'jti' => bin2hex(random_bytes(16)) // Unique token ID
+        ];
+
+        return JWT::encode($payload, $secret, 'HS256');
+    }
+
+    /**
+     * Force expire a token by setting its expiration to now
+     */
+    public static function expireToken(string $token, string $secret): string
+    {
+        $decoded = JWT::decode($token, new \Firebase\JWT\Key($secret, 'HS256'));
+        
+        $payload = [
+            'sub' => $decoded->sub,
+            'iat' => $decoded->iat,
+            'exp' => time(), // Set expiration to current time
+            'jti' => $decoded->jti
         ];
 
         return JWT::encode($payload, $secret, 'HS256');

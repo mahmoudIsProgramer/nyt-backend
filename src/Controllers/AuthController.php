@@ -85,4 +85,22 @@ class AuthController extends BaseController
             $this->error('Error fetching user details', 500);
         }
     }
+
+    public function logout(): void
+    {
+        try {
+            $userId = $_REQUEST['user_id'] ?? null;
+            
+            if (!$userId) {
+                $this->unauthorized('User not authenticated');
+                return;
+            }
+
+            $this->authService->logout($userId);
+            $this->success(message: 'Successfully logged out');
+            
+        } catch (\Exception $e) {
+            $this->error('Error during logout', 500);
+        }
+    }
 }

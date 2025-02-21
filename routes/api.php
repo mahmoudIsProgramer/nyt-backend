@@ -25,6 +25,11 @@ $router->post('/auth/login', function() use ($authController) {
     $authController->login();
 });
 
+$router->post('/auth/logout', function() use ($authController) {
+    $authController->logout();
+}, [JWTAuthMiddleware::class]);
+
+
 // Public Article Routes
 $router->get('/articles/search', function() use ($articlesController) {
     $articlesController->search();
