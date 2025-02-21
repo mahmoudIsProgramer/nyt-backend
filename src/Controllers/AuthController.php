@@ -28,7 +28,8 @@ class AuthController extends BaseController
             
             $this->authResponse(
                 token: $result['token'],
-                message: 'Registration successful'
+                message: 'Registration successful',
+                userData: $result['user']
             );
         } catch (\InvalidArgumentException $e) {
             $this->error($e->getMessage(), 400);

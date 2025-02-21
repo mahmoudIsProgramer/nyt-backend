@@ -45,13 +45,14 @@ class AuthService
 
         // Convert user model to array and remove sensitive data
         $userData = $user->toArray();
-        // Helper::dd($userData);
-
+        
         unset($userData['password']);
+        // Helper::dd($userData);
 
         return [
             'user' => $userData,
             'token' => $this->generateToken($user->id)
+
         ];
     }
 
