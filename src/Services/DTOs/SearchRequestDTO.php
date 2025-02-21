@@ -19,17 +19,17 @@ class SearchRequestDTO {
     }
 
     private function validate(): void {
-        if ($this->beginDate && !preg_match('/^\d{8}$/', $this->beginDate)) {
-            throw new \InvalidArgumentException('Begin date must be in YYYYMMDD format');
+        if ($this->beginDate && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->beginDate)) {
+            throw new \InvalidArgumentException('Begin date must be in YYYY-MM-DD format');
         }
 
-        if ($this->endDate && !preg_match('/^\d{8}$/', $this->endDate)) {
-            throw new \InvalidArgumentException('End date must be in YYYYMMDD format');
+        if ($this->endDate && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->endDate)) {
+            throw new \InvalidArgumentException('End date must be in YYYY-MM-DD format');
         }
 
-        if ($this->page !== null && ($this->page < 0 || $this->page > 100)) {
-            throw new \InvalidArgumentException('Page must be between 0 and 100');
-        }
+        // if ($this->page !== null && ($this->page < 0 || $this->page > 100)) {
+        //     throw new \InvalidArgumentException('Page must be between 0 and 100');
+        // }
 
         if ($this->sort && !in_array($this->sort, ['newest', 'oldest', 'relevance'])) {
             throw new \InvalidArgumentException('Sort must be newest, oldest, or relevance');
